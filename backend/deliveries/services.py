@@ -3,8 +3,41 @@ from django.utils import timezone
 
 from .models import DeliveryOrder
 
-
 class DeliveryService:
+
+    @staticmethod
+    @transaction.atomic
+    def create_delivery(
+        business,
+        user,
+        validated_data,
+    ):
+        sale = validated_data["sale"]
+
+        if sale.business_id != business.id:
+            raise ValueError(
+                "Sale does not belong to this business."
+            )
+
+        if sale.status != sale.Status.COMPLETED:
+            raise ValueError(
+                "Only completed sales can have delivery orders."
+            )
+
+        if DeliveryOrder.objects.filter(
+            sale=sale
+        ).exists():
+            raise ValueError(
+                "This sale already has a delivery order."
+            )
+
+        delivery = DeliveryOrder.objects.create(
+            business=business,
+            **validated_data,
+        )
+
+        return delivery
+
     @staticmethod
     @transaction.atomic
     def assign_delivery(delivery_id, user):
@@ -24,17 +57,22 @@ class DeliveryService:
             )
 
         if user is None:
-            raise ValueError("A delivery order must be assigned to a user.")
+            raise ValueError(
+                "A delivery order must be assigned to a user."
+            )
 
         if not user.is_active:
-            raise ValueError("An inactive user cannot be assigned deliveries.")
+            raise ValueError(
+                "An inactive user cannot be assigned deliveries."
+            )
 
         if not delivery.business.memberships.filter(
             user=user,
             is_active=True,
         ).exists():
             raise ValueError(
-                "The assigned user is not an active member of this business."
+                "The assigned user is not an active member "
+                "of this business."
             )
 
         delivery.assigned_to = user
@@ -55,30 +93,42 @@ class DeliveryService:
     @staticmethod
     @transaction.atomic
     def start_delivery(delivery_id):
-        delivery = DeliveryOrder.objects.select_for_update().get(
-            id=delivery_id
+        delivery = (
+            DeliveryOrder.objects
+            .select_for_update()
+            .get(id=delivery_id)
         )
 
         if delivery.status != DeliveryOrder.Status.ASSIGNED:
             raise ValueError(
-                "Only assigned delivery orders can go out for delivery."
+                "Only assigned delivery orders can go out "
+                "for delivery."
             )
 
         delivery.status = DeliveryOrder.Status.OUT_FOR_DELIVERY
-        delivery.save(update_fields=["status", "updated_at"])
+
+        delivery.save(
+            update_fields=[
+                "status",
+                "updated_at",
+            ]
+        )
 
         return delivery
 
     @staticmethod
     @transaction.atomic
     def complete_delivery(delivery_id):
-        delivery = DeliveryOrder.objects.select_for_update().get(
-            id=delivery_id
+        delivery = (
+            DeliveryOrder.objects
+            .select_for_update()
+            .get(id=delivery_id)
         )
 
         if delivery.status != DeliveryOrder.Status.OUT_FOR_DELIVERY:
             raise ValueError(
-                "Only orders out for delivery can be marked as delivered."
+                "Only orders out for delivery can be marked "
+                "as delivered."
             )
 
         delivery.status = DeliveryOrder.Status.DELIVERED
@@ -97,8 +147,10 @@ class DeliveryService:
     @staticmethod
     @transaction.atomic
     def cancel_delivery(delivery_id):
-        delivery = DeliveryOrder.objects.select_for_update().get(
-            id=delivery_id
+        delivery = (
+            DeliveryOrder.objects
+            .select_for_update()
+            .get(id=delivery_id)
         )
 
         if delivery.status == DeliveryOrder.Status.DELIVERED:
@@ -112,6 +164,12 @@ class DeliveryService:
             )
 
         delivery.status = DeliveryOrder.Status.CANCELLED
-        delivery.save(update_fields=["status", "updated_at"])
+
+        delivery.save(
+            update_fields=[
+                "status",
+                "updated_at",
+            ]
+        )
 
         return delivery
