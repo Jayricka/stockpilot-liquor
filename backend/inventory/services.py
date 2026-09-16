@@ -2,37 +2,54 @@ from decimal import Decimal
 
 from django.db import transaction
 
-from .models import Purchase, StockMovement
+from products.models import Product
+
+from .models import Purchase, PurchaseItem, StockMovement
 
 
 class PurchaseService:
-    """
-    Handles purchase-related business operations.
 
-    Stock changes happen here rather than inside views or serializers.
-    """
+    @staticmethod
+    @transaction.atomic
+    def create_purchase(
+        business,
+        user,
+        validated_data,
+        items_data,
+    ):
+        supplier = validated_data["supplier"]
+
+        if supplier.business_id != business.id:
+            raise ValueError(
+                "Supplier does not belong to this business."
+            )
+
+        purchase = Purchase.objects.create(
+            business=business,
+            created_by=user,
+            **validated_data,
+        )
+
+        for item_data in items_data:
+            product = item_data["product"]
+
+            if product.business_id != business.id:
+                raise ValueError(
+                    "Product does not belong to this business."
+                )
+
+            PurchaseItem.objects.create(
+                purchase=purchase,
+                **item_data,
+            )
+
+        purchase.update_total()
+
+        return purchase
 
     @staticmethod
     @transaction.atomic
     def complete_purchase(purchase_id, user):
-        """
-        Complete a purchase and update product stock atomically.
-
-        Args:
-            purchase_id: ID of the purchase to complete.
-            user: User performing the operation.
-
-        Returns:
-            The completed Purchase instance.
-
-        Raises:
-            Purchase.DoesNotExist:
-                If the purchase does not exist.
-
-            ValueError:
-                If the purchase cannot be completed.
-        """
-
         purchase = (
             Purchase.objects
             .select_for_update()
@@ -51,7 +68,9 @@ class PurchaseService:
             )
 
         items = list(
-            purchase.items.select_related("product").all()
+            purchase.items
+            .select_related("product")
+            .all()
         )
 
         if not items:
@@ -63,15 +82,14 @@ class PurchaseService:
 
         for item in items:
             product = (
-                item.product.__class__.objects
+                Product.objects
                 .select_for_update()
-                .get(id=item.product.id)
+                .get(id=item.product_id)
             )
 
             if product.business_id != purchase.business_id:
                 raise ValueError(
-                    "Purchase item does not belong "
-                    "to the purchase business."
+                    "Purchase item does not belong to the purchase business."
                 )
 
             product.increase_stock(item.quantity)
@@ -98,6 +116,34 @@ class PurchaseService:
         purchase.save(
             update_fields=[
                 "total_amount",
+                "status",
+                "updated_at",
+            ]
+        )
+
+        return purchase
+
+    @staticmethod
+    @transaction.atomic
+    def cancel_purchase(purchase_id):
+        purchase = Purchase.objects.select_for_update().get(
+            id=purchase_id
+        )
+
+        if purchase.status == Purchase.Status.COMPLETED:
+            raise ValueError(
+                "A completed purchase cannot be cancelled."
+            )
+
+        if purchase.status == Purchase.Status.CANCELLED:
+            raise ValueError(
+                "This purchase is already cancelled."
+            )
+
+        purchase.status = Purchase.Status.CANCELLED
+
+        purchase.save(
+            update_fields=[
                 "status",
                 "updated_at",
             ]
