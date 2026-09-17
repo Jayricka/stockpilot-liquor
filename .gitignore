@@ -43,3 +43,6 @@ yarn-error.log*
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Vite
+frontend/.vite/

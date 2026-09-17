@@ -5,6 +5,7 @@
 It helps liquor-store owners manage products, stock, purchases, sales, suppliers, deliveries, and business performance from one centralized system.
 
 > **Project status:** Backend MVP completed and tested — **79 tests passing**.
+> Frontend MVP implemented with a professional landing page, authentication flow, and API-connected business dashboard.
 
 ---
 
@@ -181,14 +182,15 @@ StockPilot Liquor is being developed to solve these challenges through a simple,
 
 ### Frontend
 
-The frontend is planned with:
-
 - React
 - Vite
-- Tailwind CSS
-- Axios
+- Tailwind CSS v4
 - React Router
-- Charting library for reports and analytics
+- Axios
+- Lucide React
+- Recharts
+- Responsive SaaS dashboard interface
+- Light and dark theme support
 
 ### Development Tools
 
@@ -207,6 +209,7 @@ The frontend is planned with:
 stockpilot-liquor/
 ├── README.md
 ├── .gitignore
+├── LICENSE
 ├── scripts/
 │   ├── migrate.sh
 │   ├── push.sh
@@ -235,3 +238,70 @@ stockpilot-liquor/
 │   └── reports/
 │
 └── frontend/
+    ├── package.json
+    ├── yarn.lock
+    ├── vite.config.js
+    ├── index.html
+    ├── .env.example
+    │
+    └── src/
+        ├── App.jsx
+        ├── App.css
+        ├── index.css
+        ├── main.jsx
+        │
+        ├── context/
+        │   ├── ThemeContext.jsx
+        │   └── AuthContext.jsx
+        │
+        ├── data/
+        │   └── landingPage.js
+        │
+        ├── services/
+        │   ├── api.js
+        │   ├── auth.js
+        │   └── dashboard.js
+        │
+        ├── pages/
+        │   ├── auth/
+        │   │   └── Login.jsx
+        │   └── dashboard/
+        │       └── Dashboard.jsx
+        │
+        ├── components/
+        │   ├── Navbar.jsx
+        │   ├── Hero.jsx
+        │   ├── DashboardPreview.jsx
+        │   ├── Features.jsx
+        │   ├── WhyStockPilot.jsx
+        │   ├── HowItWorks.jsx
+        │   ├── Pricing.jsx
+        │   ├── FAQ.jsx
+        │   ├── ContactCTA.jsx
+        │   ├── Footer.jsx
+        │   ├── layout/
+        │   │   ├── AppLayout.jsx
+        │   │   ├── Sidebar.jsx
+        │   │   └── Topbar.jsx
+        │   └── dashboard/
+        │       ├── BusinessSnapshot.jsx
+        │       ├── DashboardHeader.jsx
+        │       ├── DashboardLoading.jsx
+        │       ├── LowStock.jsx
+        │       ├── MetricCard.jsx
+        │       ├── PaymentMethods.jsx
+        │       ├── RecentSales.jsx
+        │       └── TopProducts.jsx
+        │
+        └── styles/
+            ├── layout.css
+            ├── navbar.css
+            ├── hero.css
+            ├── dashboard.css
+            ├── dashboard-cards.css
+            ├── dashboard-tables.css
+            ├── sections.css
+            ├── responsive.css
+            ├── auth.css
+            ├── app-layout.css
+            └── saas-dashboard.css
