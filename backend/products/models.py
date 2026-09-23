@@ -7,18 +7,41 @@ from businesses.models import Business
 
 
 class Category(models.Model):
+    class Group(models.TextChoices):
+        ALCOHOLIC_DRINKS = (
+            "ALCOHOLIC_DRINKS",
+            "Alcoholic Drinks",
+        )
+        SODA_AND_DRINKS = (
+            "SODA_AND_DRINKS",
+            "Soda & Drinks",
+        )
+        CIGARETTES_AND_TOBACCO = (
+            "CIGARETTES_AND_TOBACCO",
+            "Cigarettes & Tobacco",
+        )
+        OTHER = "OTHER", "Other"
+
     business = models.ForeignKey(
         Business,
         on_delete=models.CASCADE,
         related_name="categories",
     )
+
     name = models.CharField(max_length=100)
+
+    group = models.CharField(
+        max_length=30,
+        choices=Group.choices,
+        default=Group.OTHER,
+    )
+
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["group", "name"]
         verbose_name = "Category"
         verbose_name_plural = "Categories"
         constraints = [
@@ -49,6 +72,12 @@ class Product(models.Model):
         Category,
         on_delete=models.PROTECT,
         related_name="products",
+    )
+
+    brand = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
     )
 
     name = models.CharField(max_length=150)
@@ -107,6 +136,9 @@ class Product(models.Model):
         ]
 
     def __str__(self):
+        if self.brand:
+            return f"{self.brand} {self.name}"
+
         return self.name
 
     def has_sufficient_stock(self, quantity):
@@ -117,7 +149,12 @@ class Product(models.Model):
             raise ValueError("Quantity must be greater than zero.")
 
         self.stock_quantity += quantity
-        self.save(update_fields=["stock_quantity", "updated_at"])
+        self.save(
+            update_fields=[
+                "stock_quantity",
+                "updated_at",
+            ]
+        )
 
     def reduce_stock(self, quantity):
         if quantity <= 0:
@@ -127,7 +164,12 @@ class Product(models.Model):
             raise ValueError("Insufficient stock.")
 
         self.stock_quantity -= quantity
-        self.save(update_fields=["stock_quantity", "updated_at"])
+        self.save(
+            update_fields=[
+                "stock_quantity",
+                "updated_at",
+            ]
+        )
 
     @property
     def is_low_stock(self):

@@ -19,6 +19,8 @@ import Footer from './components/Footer'
 import AppLayout from './components/layout/AppLayout'
 import Login from './pages/auth/Login'
 import Dashboard from './pages/dashboard/Dashboard'
+import Inventory from './pages/inventory/Inventory'
+import Products from './pages/products/Products'
 
 function LandingPage() {
   return (
@@ -43,9 +45,15 @@ function LandingPage() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={<LandingPage />}
+      />
 
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={<Login />}
+      />
 
       <Route element={<AppLayout />}>
         <Route
@@ -55,16 +63,12 @@ function App() {
 
         <Route
           path="/inventory"
-          element={
-            <ComingSoon title="Inventory" />
-          }
+          element={<Inventory />}
         />
 
         <Route
           path="/products"
-          element={
-            <ComingSoon title="Products" />
-          }
+          element={<Products />}
         />
 
         <Route
@@ -112,7 +116,12 @@ function App() {
 
       <Route
         path="*"
-        element={<Navigate to="/" replace />}
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
       />
     </Routes>
   )
@@ -122,7 +131,9 @@ function ComingSoon({ title }) {
   return (
     <section className="coming-soon">
       <span>StockPilot</span>
+
       <h2>{title}</h2>
+
       <p>
         This workspace is being connected to your
         Django backend.

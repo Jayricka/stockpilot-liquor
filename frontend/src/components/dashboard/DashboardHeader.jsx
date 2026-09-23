@@ -6,10 +6,6 @@ function DashboardHeader({
   onBusinessChange,
   date,
 }) {
-  const business = businesses.find(
-    (item) => item.id === businessId,
-  )
-
   return (
     <header className="dashboard-header">
       <div>

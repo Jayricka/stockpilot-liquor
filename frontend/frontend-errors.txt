@@ -1,0 +1,771 @@
+===== DashboardHeader.jsx =====
+import { Building2, ChevronDown } from 'lucide-react'
+
+function DashboardHeader({
+  businesses,
+  businessId,
+  onBusinessChange,
+  date,
+}) {
+  const business = businesses.find(
+    (item) => item.id === businessId,
+  )
+
+  return (
+    <header className="dashboard-header">
+      <div>
+        <span className="dashboard-eyebrow">
+          {date}
+        </span>
+
+        <h1>Business overview</h1>
+
+        <p>
+          Monitor sales, inventory and daily operations.
+        </p>
+      </div>
+
+      <label className="business-selector">
+        <Building2 size={17} />
+
+        <select
+          value={businessId || ''}
+          onChange={(event) =>
+            onBusinessChange(Number(event.target.value))
+          }
+        >
+          {businesses.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+
+        <ChevronDown size={15} />
+      </label>
+    </header>
+  )
+}
+
+export default DashboardHeader
+===== AuthContext.jsx =====
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+} from 'react'
+
+const AuthContext = createContext(null)
+
+function getStoredUser() {
+  const storedUser = localStorage.getItem('stockpilot-user')
+
+  if (!storedUser) {
+    return null
+  }
+
+  try {
+    return JSON.parse(storedUser)
+  } catch {
+    localStorage.removeItem('stockpilot-user')
+    return null
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [accessToken, setAccessToken] = useState(
+    () => localStorage.getItem('stockpilot-access'),
+  )
+
+  const [user, setUser] = useState(getStoredUser)
+
+  function saveSession(tokens, userData = null) {
+    localStorage.setItem(
+      'stockpilot-access',
+      tokens.access,
+    )
+
+    if (tokens.refresh) {
+      localStorage.setItem(
+        'stockpilot-refresh',
+        tokens.refresh,
+      )
+    }
+
+    setAccessToken(tokens.access)
+
+    if (userData) {
+      localStorage.setItem(
+        'stockpilot-user',
+        JSON.stringify(userData),
+      )
+
+      setUser(userData)
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('stockpilot-access')
+    localStorage.removeItem('stockpilot-refresh')
+    localStorage.removeItem('stockpilot-user')
+
+    setAccessToken(null)
+    setUser(null)
+  }
+
+  const value = useMemo(
+    () => ({
+      accessToken,
+      user,
+      isAuthenticated: Boolean(accessToken),
+      saveSession,
+      logout,
+    }),
+    [accessToken, user],
+  )
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+
+  if (!context) {
+    throw new Error(
+      'useAuth must be used inside an AuthProvider',
+    )
+  }
+
+  return context
+}
+===== ThemeContext.jsx =====
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+
+const ThemeContext = createContext(null)
+
+const getInitialTheme = () => {
+  const savedTheme = localStorage.getItem('stockpilot-theme')
+
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(getInitialTheme)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('stockpilot-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) =>
+      currentTheme === 'light' ? 'dark' : 'light',
+    )
+  }
+
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme,
+      toggleTheme,
+      isDark: theme === 'dark',
+    }),
+    [theme],
+  )
+
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext)
+
+  if (!context) {
+    throw new Error('useTheme must be used inside a ThemeProvider')
+  }
+
+  return context
+}
+===== products.js =====
+import api from './api'
+
+export async function getProducts(businessId) {
+  const response = await api.get(
+    `businesses/${businessId}/products/`,
+  )
+
+  return response.data
+}
+
+export async function getCategories(businessId) {
+  const response = await api.get(
+    `businesses/${businessId}/categories/`,
+  )
+
+  return response.data
+}
+
+export async function createProduct(
+  businessId,
+  product,
+) {
+  const response = await api.post(
+    `businesses/${businessId}/products/`,
+    product,
+  )
+
+  return response.data
+}
+
+export async function updateProduct(
+  businessId,
+  productId,
+  product,
+) {
+  const response = await api.patch(
+    `businesses/${businessId}/products/${productId}/`,
+    product,
+  )
+
+  return response.data
+}
+
+export async function deleteProduct(
+  businessId,
+  productId,
+) {
+  await api.delete(
+    `businesses/${businessId}/products/${productId}/`,
+  )
+}
+
+export async function createCategory(
+  businessId,
+  category,
+) {
+  const response = await api.post(
+    `businesses/${businessId}/categories/`,
+    category,
+  )
+
+  return response.data
+}
+===== Products.jsx =====
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { AlertCircle } from 'lucide-react'
+
+import ProductHeader from '../../components/products/ProductHeader'
+import ProductStats from '../../components/products/ProductStats'
+import ProductFilters from '../../components/products/ProductFilters'
+import ProductTable from '../../components/products/ProductTable'
+import ProductForm from '../../components/products/ProductForm'
+import ProductLoading from '../../components/products/ProductLoading'
+
+import {
+  getProducts,
+  getCategories,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '../../services/products'
+
+import { getBusinesses } from '../../services/dashboard'
+
+const INITIAL_FILTERS = {
+  search: '',
+  group: 'all',
+  category: 'all',
+  brand: 'all',
+  stock: 'all',
+  status: 'all',
+}
+
+function Products() {
+  const [businesses, setBusinesses] = useState([])
+  const [selectedBusinessId, setSelectedBusinessId] =
+    useState('')
+
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  const [error, setError] = useState('')
+  const [formErrors, setFormErrors] = useState({})
+
+  const [search, setSearch] = useState(
+    INITIAL_FILTERS.search,
+  )
+
+  const [groupFilter, setGroupFilter] =
+    useState(INITIAL_FILTERS.group)
+
+  const [categoryFilter, setCategoryFilter] =
+    useState(INITIAL_FILTERS.category)
+
+  const [brandFilter, setBrandFilter] =
+    useState(INITIAL_FILTERS.brand)
+
+  const [stockFilter, setStockFilter] =
+    useState(INITIAL_FILTERS.stock)
+
+  const [statusFilter, setStatusFilter] =
+    useState(INITIAL_FILTERS.status)
+
+  const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] =
+    useState(null)
+
+  const getErrorMessage = useCallback(
+    (requestError, fallback) => {
+      const responseData =
+        requestError?.response?.data
+
+      if (!responseData) {
+        return fallback
+      }
+
+      if (typeof responseData === 'string') {
+        return responseData
+      }
+
+      if (responseData.detail) {
+        return responseData.detail
+      }
+
+      if (responseData.message) {
+        return responseData.message
+      }
+
+      return fallback
+    },
+    [],
+  )
+
+  const loadBusinesses = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      const data = await getBusinesses()
+
+      const businessList = Array.isArray(data)
+        ? data
+        : data.results || []
+
+      setBusinesses(businessList)
+
+      if (businessList.length > 0) {
+        setSelectedBusinessId(
+          String(businessList[0].id),
+        )
+      }
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          'Unable to load businesses.',
+        ),
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [getErrorMessage])
+
+  const loadWorkspaceData = useCallback(
+    async (businessId) => {
+      try {
+        setLoading(true)
+        setError('')
+
+        const [productData, categoryData] =
+          await Promise.all([
+            getProducts(businessId),
+            getCategories(businessId),
+          ])
+
+        setProducts(
+          Array.isArray(productData)
+            ? productData
+            : productData.results || [],
+        )
+
+        setCategories(
+          Array.isArray(categoryData)
+            ? categoryData
+            : categoryData.results || [],
+        )
+      } catch (requestError) {
+        setError(
+          getErrorMessage(
+            requestError,
+            'Unable to load product workspace.',
+          ),
+        )
+      } finally {
+        setLoading(false)
+      }
+    },
+    [getErrorMessage],
+  )
+
+  useEffect(() => {
+    loadBusinesses()
+  }, [loadBusinesses])
+
+  useEffect(() => {
+    if (selectedBusinessId) {
+      loadWorkspaceData(selectedBusinessId)
+    }
+  }, [
+    selectedBusinessId,
+    loadWorkspaceData,
+  ])
+
+  function resetFilters() {
+    setSearch(INITIAL_FILTERS.search)
+    setGroupFilter(INITIAL_FILTERS.group)
+    setCategoryFilter(INITIAL_FILTERS.category)
+    setBrandFilter(INITIAL_FILTERS.brand)
+    setStockFilter(INITIAL_FILTERS.stock)
+    setStatusFilter(INITIAL_FILTERS.status)
+  }
+
+  function handleBusinessChange(businessId) {
+    setSelectedBusinessId(String(businessId))
+    resetFilters()
+    setShowForm(false)
+    setEditingProduct(null)
+    setFormErrors({})
+  }
+
+  function openCreateForm() {
+    setEditingProduct(null)
+    setFormErrors({})
+    setShowForm(true)
+  }
+
+  function openEditForm(product) {
+    setEditingProduct(product)
+    setFormErrors({})
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    if (saving) {
+      return
+    }
+
+    setShowForm(false)
+    setEditingProduct(null)
+    setFormErrors({})
+  }
+
+  async function handleSubmit(payload) {
+    if (!selectedBusinessId) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      setFormErrors({})
+      setError('')
+
+      if (editingProduct) {
+        await updateProduct(
+          selectedBusinessId,
+          editingProduct.id,
+          payload,
+        )
+      } else {
+        await createProduct(
+          selectedBusinessId,
+          payload,
+        )
+      }
+
+      await loadWorkspaceData(selectedBusinessId)
+
+      setShowForm(false)
+      setEditingProduct(null)
+      setFormErrors({})
+    } catch (requestError) {
+      const responseData =
+        requestError?.response?.data
+
+      if (
+        responseData &&
+        typeof responseData === 'object'
+      ) {
+        setFormErrors(responseData)
+      } else {
+        setError(
+          getErrorMessage(
+            requestError,
+            'Unable to save product.',
+          ),
+        )
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(product) {
+    const confirmed = window.confirm(
+      `Delete ${product.name}? This action cannot be undone.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setError('')
+
+      await deleteProduct(
+        selectedBusinessId,
+        product.id,
+      )
+
+      await loadWorkspaceData(selectedBusinessId)
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          'Unable to delete product.',
+        ),
+      )
+    }
+  }
+
+  const brands = useMemo(() => {
+    const uniqueBrands = new Set()
+
+    products.forEach((product) => {
+      const brand = product.brand?.trim()
+
+      if (brand) {
+        uniqueBrands.add(brand)
+      }
+    })
+
+    return Array.from(uniqueBrands).sort(
+      (firstBrand, secondBrand) =>
+        firstBrand.localeCompare(secondBrand),
+    )
+  }, [products])
+
+  const filteredCategories = useMemo(() => {
+    if (groupFilter === 'all') {
+      return categories
+    }
+
+    return categories.filter(
+      (category) =>
+        category.group === groupFilter,
+    )
+  }, [categories, groupFilter])
+
+  const filteredProducts = useMemo(() => {
+    const searchValue = search
+      .trim()
+      .toLowerCase()
+
+    return products.filter((product) => {
+      const searchableValues = [
+        product.name,
+        product.brand,
+        product.sku,
+        product.category_name,
+        product.category_group_display,
+      ]
+
+      const matchesSearch =
+        !searchValue ||
+        searchableValues.some((value) =>
+          value
+            ?.toString()
+            .toLowerCase()
+            .includes(searchValue),
+        )
+
+      const matchesGroup =
+        groupFilter === 'all' ||
+        product.category_group === groupFilter
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        String(product.category) ===
+          categoryFilter
+
+      const matchesBrand =
+        brandFilter === 'all' ||
+        product.brand === brandFilter
+
+      const stockQuantity = Number(
+        product.stock_quantity || 0,
+      )
+
+      const matchesStock =
+        stockFilter === 'all' ||
+        (stockFilter === 'in-stock' &&
+          stockQuantity > 0) ||
+        (stockFilter === 'low-stock' &&
+          product.is_low_stock) ||
+        (stockFilter === 'out-of-stock' &&
+          stockQuantity <= 0)
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' &&
+          product.is_active) ||
+        (statusFilter === 'inactive' &&
+          !product.is_active)
+
+      return (
+        matchesSearch &&
+        matchesGroup &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesStock &&
+        matchesStatus
+      )
+    })
+  }, [
+    products,
+    search,
+    groupFilter,
+    categoryFilter,
+    brandFilter,
+    stockFilter,
+    statusFilter,
+  ])
+
+  function handleGroupChange(value) {
+    setGroupFilter(value)
+    setCategoryFilter('all')
+  }
+
+  const selectedBusiness = businesses.find(
+    (business) =>
+      String(business.id) ===
+      selectedBusinessId,
+  )
+
+  return (
+    <section className="products-page">
+      <ProductHeader
+        businesses={businesses}
+        businessId={selectedBusinessId}
+        selectedBusiness={selectedBusiness}
+        onBusinessChange={handleBusinessChange}
+        onAddProduct={openCreateForm}
+        productCount={products.length}
+      />
+
+      {error && (
+        <div className="products-error">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <ProductLoading />
+      ) : (
+        <>
+          <ProductStats products={products} />
+
+          <ProductFilters
+            search={search}
+            groupFilter={groupFilter}
+            categoryFilter={categoryFilter}
+            brandFilter={brandFilter}
+            stockFilter={stockFilter}
+            statusFilter={statusFilter}
+            categories={filteredCategories}
+            brands={brands}
+            onSearchChange={setSearch}
+            onGroupChange={handleGroupChange}
+            onCategoryChange={setCategoryFilter}
+            onBrandChange={setBrandFilter}
+            onStockChange={setStockFilter}
+            onStatusChange={setStatusFilter}
+            resultCount={filteredProducts.length}
+          />
+
+          <ProductTable
+            products={filteredProducts}
+            loading={false}
+            onEdit={openEditForm}
+            onDelete={handleDelete}
+            onAddProduct={openCreateForm}
+          />
+        </>
+      )}
+
+      {showForm && (
+        <ProductForm
+          key={editingProduct?.id || 'new'}
+          product={editingProduct}
+          categories={categories}
+          loading={saving}
+          errors={formErrors}
+          onSubmit={handleSubmit}
+          onClose={closeForm}
+        />
+      )}
+    </section>
+  )
+}
+
+export default Products
+===== eslint.config.js =====
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+  },
+])
