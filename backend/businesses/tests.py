@@ -25,9 +25,26 @@ class BusinessAPITests(TestCase):
             last_name="Owner",
         )
 
+        self.manager = User.objects.create_user(
+            email="manager@test.com",
+            password="TestPassword123!",
+            first_name="Test",
+            last_name="Manager",
+        )
+
+        self.staff = User.objects.create_user(
+            email="staff@test.com",
+            password="TestPassword123!",
+            first_name="Test",
+            last_name="Staff",
+        )
+
         refresh = RefreshToken.for_user(self.user)
+
         self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}"
+            HTTP_AUTHORIZATION=(
+                f"Bearer {refresh.access_token}"
+            )
         )
 
     def test_authenticated_user_can_create_business(self):
@@ -196,3 +213,108 @@ class BusinessAPITests(TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+    def create_test_business(self):
+        business = Business.objects.create(
+            name="Settings Test Store",
+            business_type="liquor_store",
+            phone="0700000000",
+        )
+
+        BusinessMembership.objects.create(
+            user=self.user,
+            business=business,
+            role=BusinessMembership.Role.OWNER,
+            is_active=True,
+        )
+
+        BusinessMembership.objects.create(
+            user=self.manager,
+            business=business,
+            role=BusinessMembership.Role.MANAGER,
+            is_active=True,
+        )
+
+        BusinessMembership.objects.create(
+            user=self.staff,
+            business=business,
+            role=BusinessMembership.Role.STAFF,
+            is_active=True,
+        )
+
+        return business
+
+    def authenticate_as(self, user):
+        refresh = RefreshToken.for_user(user)
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=(
+                f"Bearer {refresh.access_token}"
+            )
+        )
+
+    def test_owner_can_update_business(self):
+        business = self.create_test_business()
+
+        self.authenticate_as(self.user)
+
+        response = self.client.patch(
+            f"/api/businesses/{business.id}/",
+            {
+                "name": "Owner Updated Store",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        business.refresh_from_db()
+
+        self.assertEqual(
+            business.name,
+            "Owner Updated Store",
+        )
+
+    def test_manager_can_update_business(self):
+        business = self.create_test_business()
+
+        self.authenticate_as(self.manager)
+
+        response = self.client.patch(
+            f"/api/businesses/{business.id}/",
+            {
+                "name": "Manager Updated Store",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        business.refresh_from_db()
+
+        self.assertEqual(
+            business.name,
+            "Manager Updated Store",
+        )
+
+    def test_staff_cannot_update_business(self):
+        business = self.create_test_business()
+
+        self.authenticate_as(self.staff)
+
+        response = self.client.patch(
+            f"/api/businesses/{business.id}/",
+            {
+                "name": "Unauthorized Update",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        business.refresh_from_db()
+
+        self.assertEqual(
+            business.name,
+            "Settings Test Store",
+        )
