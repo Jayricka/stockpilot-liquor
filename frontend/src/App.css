@@ -19,3 +19,6 @@
 @import './styles/products.css';
 @import './styles/products-filters.css';
 @import './styles/products-table.css';
+
+@import './styles/sales.css';
+@import './styles/suppliers.css';

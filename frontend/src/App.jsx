@@ -21,6 +21,8 @@ import Login from './pages/auth/Login'
 import Dashboard from './pages/dashboard/Dashboard'
 import Inventory from './pages/inventory/Inventory'
 import Products from './pages/products/Products'
+import Sales from './pages/sales/Sales'
+import Suppliers from './pages/suppliers/Suppliers'
 
 function LandingPage() {
   return (
@@ -73,9 +75,7 @@ function App() {
 
         <Route
           path="/sales"
-          element={
-            <ComingSoon title="Sales" />
-          }
+          element={<Sales />}
         />
 
         <Route
@@ -87,9 +87,7 @@ function App() {
 
         <Route
           path="/suppliers"
-          element={
-            <ComingSoon title="Suppliers" />
-          }
+          element={<Suppliers />}
         />
 
         <Route
