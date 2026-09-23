@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -8,29 +10,44 @@ import {
 
 const ThemeContext = createContext(null)
 
-const getInitialTheme = () => {
-  const savedTheme = localStorage.getItem('stockpilot-theme')
+function getInitialTheme() {
+  const savedTheme = localStorage.getItem(
+    'stockpilot-theme',
+  )
 
-  if (savedTheme === 'light' || savedTheme === 'dark') {
+  if (
+    savedTheme === 'light' ||
+    savedTheme === 'dark'
+  ) {
     return savedTheme
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return window.matchMedia(
+    '(prefers-color-scheme: dark)',
+  ).matches
     ? 'dark'
     : 'light'
 }
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(getInitialTheme)
+  const [theme, setTheme] = useState(
+    getInitialTheme,
+  )
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem('stockpilot-theme', theme)
+
+    localStorage.setItem(
+      'stockpilot-theme',
+      theme,
+    )
   }, [theme])
 
-  const toggleTheme = () => {
+  function toggleTheme() {
     setTheme((currentTheme) =>
-      currentTheme === 'light' ? 'dark' : 'light',
+      currentTheme === 'light'
+        ? 'dark'
+        : 'light',
     )
   }
 
@@ -55,7 +72,9 @@ export function useTheme() {
   const context = useContext(ThemeContext)
 
   if (!context) {
-    throw new Error('useTheme must be used inside a ThemeProvider')
+    throw new Error(
+      'useTheme must be used inside a ThemeProvider',
+    )
   }
 
   return context

@@ -26,7 +26,14 @@ class ProductService:
     @staticmethod
     @transaction.atomic
     def create_product(business, validated_data):
-        category = validated_data.get("category")
+        data = validated_data.copy()
+
+        category = data.pop("category")
+
+        initial_quantity = data.pop(
+            "initial_quantity",
+            0,
+        )
 
         if category.business_id != business.id:
             raise ValueError(
@@ -35,13 +42,23 @@ class ProductService:
 
         return Product.objects.create(
             business=business,
-            **validated_data,
+            category=category,
+            stock_quantity=initial_quantity,
+            **data,
         )
 
     @staticmethod
     @transaction.atomic
     def update_product(product, validated_data):
-        category = validated_data.get(
+        data = validated_data.copy()
+
+        if "initial_quantity" in data:
+            raise ValueError(
+                "Opening quantity cannot be changed "
+                "after product creation."
+            )
+
+        category = data.pop(
             "category",
             product.category,
         )
@@ -51,9 +68,10 @@ class ProductService:
                 "Category does not belong to this business."
             )
 
-        for field, value in validated_data.items():
+        for field, value in data.items():
             setattr(product, field, value)
 
+        product.category = category
         product.save()
 
         return product

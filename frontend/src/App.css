@@ -11,3 +11,11 @@
 @import './styles/dashboard.css';
 @import './styles/dashboard-cards.css';
 @import './styles/dashboard-tables.css';
+
+@import './styles/inventory.css';
+@import './styles/inventory-filters.css';
+@import './styles/inventory-table.css';
+
+@import './styles/products.css';
+@import './styles/products-filters.css';
+@import './styles/products-table.css';

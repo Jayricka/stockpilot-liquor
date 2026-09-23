@@ -1,0 +1,1296 @@
+============================================================
+FILE: src/pages/products/Products.jsx
+============================================================
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { AlertCircle } from 'lucide-react'
+
+import ProductHeader from '../../components/products/ProductHeader'
+import ProductStats from '../../components/products/ProductStats'
+import ProductFilters from '../../components/products/ProductFilters'
+import ProductTable from '../../components/products/ProductTable'
+import ProductForm from '../../components/products/ProductForm'
+import ProductLoading from '../../components/products/ProductLoading'
+
+import {
+  getProducts,
+  getCategories,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '../../services/products'
+
+import { getBusinesses } from '../../services/dashboard'
+
+const INITIAL_FILTERS = {
+  search: '',
+  group: 'all',
+  category: 'all',
+  brand: 'all',
+  stock: 'all',
+  status: 'all',
+}
+
+function Products() {
+  const [businesses, setBusinesses] = useState([])
+  const [selectedBusinessId, setSelectedBusinessId] =
+    useState('')
+
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  const [error, setError] = useState('')
+  const [formErrors, setFormErrors] = useState({})
+
+  const [search, setSearch] = useState(
+    INITIAL_FILTERS.search,
+  )
+
+  const [groupFilter, setGroupFilter] =
+    useState(INITIAL_FILTERS.group)
+
+  const [categoryFilter, setCategoryFilter] =
+    useState(INITIAL_FILTERS.category)
+
+  const [brandFilter, setBrandFilter] =
+    useState(INITIAL_FILTERS.brand)
+
+  const [stockFilter, setStockFilter] =
+    useState(INITIAL_FILTERS.stock)
+
+  const [statusFilter, setStatusFilter] =
+    useState(INITIAL_FILTERS.status)
+
+  const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] =
+    useState(null)
+
+  const getErrorMessage = useCallback(
+    (requestError, fallback) => {
+      const responseData =
+        requestError?.response?.data
+
+      if (!responseData) {
+        return fallback
+      }
+
+      if (typeof responseData === 'string') {
+        return responseData
+      }
+
+      if (responseData.detail) {
+        return responseData.detail
+      }
+
+      if (responseData.message) {
+        return responseData.message
+      }
+
+      return fallback
+    },
+    [],
+  )
+
+  const loadBusinesses = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      const data = await getBusinesses()
+
+      const businessList = Array.isArray(data)
+        ? data
+        : data.results || []
+
+      setBusinesses(businessList)
+
+      if (businessList.length > 0) {
+        setSelectedBusinessId(
+          String(businessList[0].id),
+        )
+      }
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          'Unable to load businesses.',
+        ),
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [getErrorMessage])
+
+  const loadWorkspaceData = useCallback(
+    async (businessId) => {
+      try {
+        setLoading(true)
+        setError('')
+
+        const [productData, categoryData] =
+          await Promise.all([
+            getProducts(businessId),
+            getCategories(businessId),
+          ])
+
+        setProducts(
+          Array.isArray(productData)
+            ? productData
+            : productData.results || [],
+        )
+
+        setCategories(
+          Array.isArray(categoryData)
+            ? categoryData
+            : categoryData.results || [],
+        )
+      } catch (requestError) {
+        setError(
+          getErrorMessage(
+            requestError,
+            'Unable to load product workspace.',
+          ),
+        )
+      } finally {
+        setLoading(false)
+      }
+    },
+    [getErrorMessage],
+  )
+
+  useEffect(() => {
+    loadBusinesses()
+  }, [loadBusinesses])
+
+  useEffect(() => {
+    if (selectedBusinessId) {
+      loadWorkspaceData(selectedBusinessId)
+    }
+  }, [
+    selectedBusinessId,
+    loadWorkspaceData,
+  ])
+
+  function resetFilters() {
+    setSearch(INITIAL_FILTERS.search)
+    setGroupFilter(INITIAL_FILTERS.group)
+    setCategoryFilter(INITIAL_FILTERS.category)
+    setBrandFilter(INITIAL_FILTERS.brand)
+    setStockFilter(INITIAL_FILTERS.stock)
+    setStatusFilter(INITIAL_FILTERS.status)
+  }
+
+  function handleBusinessChange(businessId) {
+    setSelectedBusinessId(String(businessId))
+    resetFilters()
+    setShowForm(false)
+    setEditingProduct(null)
+    setFormErrors({})
+  }
+
+  function openCreateForm() {
+    setEditingProduct(null)
+    setFormErrors({})
+    setShowForm(true)
+  }
+
+  function openEditForm(product) {
+    setEditingProduct(product)
+    setFormErrors({})
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    if (saving) {
+      return
+    }
+
+    setShowForm(false)
+    setEditingProduct(null)
+    setFormErrors({})
+  }
+
+  async function handleSubmit(payload) {
+    if (!selectedBusinessId) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      setFormErrors({})
+      setError('')
+
+      if (editingProduct) {
+        await updateProduct(
+          selectedBusinessId,
+          editingProduct.id,
+          payload,
+        )
+      } else {
+        await createProduct(
+          selectedBusinessId,
+          payload,
+        )
+      }
+
+      await loadWorkspaceData(selectedBusinessId)
+
+      setShowForm(false)
+      setEditingProduct(null)
+      setFormErrors({})
+    } catch (requestError) {
+      const responseData =
+        requestError?.response?.data
+
+      if (
+        responseData &&
+        typeof responseData === 'object'
+      ) {
+        setFormErrors(responseData)
+      } else {
+        setError(
+          getErrorMessage(
+            requestError,
+            'Unable to save product.',
+          ),
+        )
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(product) {
+    const confirmed = window.confirm(
+      `Delete ${product.name}? This action cannot be undone.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setError('')
+
+      await deleteProduct(
+        selectedBusinessId,
+        product.id,
+      )
+
+      await loadWorkspaceData(selectedBusinessId)
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          'Unable to delete product.',
+        ),
+      )
+    }
+  }
+
+  const brands = useMemo(() => {
+    const uniqueBrands = new Set()
+
+    products.forEach((product) => {
+      const brand = product.brand?.trim()
+
+      if (brand) {
+        uniqueBrands.add(brand)
+      }
+    })
+
+    return Array.from(uniqueBrands).sort(
+      (firstBrand, secondBrand) =>
+        firstBrand.localeCompare(secondBrand),
+    )
+  }, [products])
+
+  const filteredCategories = useMemo(() => {
+    if (groupFilter === 'all') {
+      return categories
+    }
+
+    return categories.filter(
+      (category) =>
+        category.group === groupFilter,
+    )
+  }, [categories, groupFilter])
+
+  const filteredProducts = useMemo(() => {
+    const searchValue = search
+      .trim()
+      .toLowerCase()
+
+    return products.filter((product) => {
+      const searchableValues = [
+        product.name,
+        product.brand,
+        product.sku,
+        product.category_name,
+        product.category_group_display,
+      ]
+
+      const matchesSearch =
+        !searchValue ||
+        searchableValues.some((value) =>
+          value
+            ?.toString()
+            .toLowerCase()
+            .includes(searchValue),
+        )
+
+      const matchesGroup =
+        groupFilter === 'all' ||
+        product.category_group === groupFilter
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        String(product.category) ===
+          categoryFilter
+
+      const matchesBrand =
+        brandFilter === 'all' ||
+        product.brand === brandFilter
+
+      const stockQuantity = Number(
+        product.stock_quantity || 0,
+      )
+
+      const matchesStock =
+        stockFilter === 'all' ||
+        (stockFilter === 'in-stock' &&
+          stockQuantity > 0) ||
+        (stockFilter === 'low-stock' &&
+          product.is_low_stock) ||
+        (stockFilter === 'out-of-stock' &&
+          stockQuantity <= 0)
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' &&
+          product.is_active) ||
+        (statusFilter === 'inactive' &&
+          !product.is_active)
+
+      return (
+        matchesSearch &&
+        matchesGroup &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesStock &&
+        matchesStatus
+      )
+    })
+  }, [
+    products,
+    search,
+    groupFilter,
+    categoryFilter,
+    brandFilter,
+    stockFilter,
+    statusFilter,
+  ])
+
+  function handleGroupChange(value) {
+    setGroupFilter(value)
+    setCategoryFilter('all')
+  }
+
+  const selectedBusiness = businesses.find(
+    (business) =>
+      String(business.id) ===
+      selectedBusinessId,
+  )
+
+  return (
+    <section className="products-page">
+      <ProductHeader
+        businesses={businesses}
+        businessId={selectedBusinessId}
+        selectedBusiness={selectedBusiness}
+        onBusinessChange={handleBusinessChange}
+        onAddProduct={openCreateForm}
+        productCount={products.length}
+      />
+
+      {error && (
+        <div className="products-error">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <ProductLoading />
+      ) : (
+        <>
+          <ProductStats products={products} />
+
+          <ProductFilters
+            search={search}
+            groupFilter={groupFilter}
+            categoryFilter={categoryFilter}
+            brandFilter={brandFilter}
+            stockFilter={stockFilter}
+            statusFilter={statusFilter}
+            categories={filteredCategories}
+            brands={brands}
+            onSearchChange={setSearch}
+            onGroupChange={handleGroupChange}
+            onCategoryChange={setCategoryFilter}
+            onBrandChange={setBrandFilter}
+            onStockChange={setStockFilter}
+            onStatusChange={setStatusFilter}
+            resultCount={filteredProducts.length}
+          />
+
+          <ProductTable
+            products={filteredProducts}
+            loading={false}
+            onEdit={openEditForm}
+            onDelete={handleDelete}
+            onAddProduct={openCreateForm}
+          />
+        </>
+      )}
+
+      {showForm && (
+        <ProductForm
+          key={editingProduct?.id || 'new'}
+          product={editingProduct}
+          categories={categories}
+          loading={saving}
+          errors={formErrors}
+          onSubmit={handleSubmit}
+          onClose={closeForm}
+        />
+      )}
+    </section>
+  )
+}
+
+export default Products
+
+
+============================================================
+FILE: src/components/products/ProductFilters.jsx
+============================================================
+import {
+  Filter,
+  Search,
+  X,
+} from 'lucide-react'
+
+const GROUP_OPTIONS = [
+  {
+    value: 'all',
+    label: 'All products',
+  },
+  {
+    value: 'ALCOHOLIC_DRINKS',
+    label: 'Alcoholic Drinks',
+  },
+  {
+    value: 'SODA_AND_DRINKS',
+    label: 'Soda & Drinks',
+  },
+  {
+    value: 'CIGARETTES_AND_TOBACCO',
+    label: 'Cigarettes & Tobacco',
+  },
+  {
+    value: 'OTHER',
+    label: 'Other',
+  },
+]
+
+function ProductFilters({
+  search,
+  groupFilter,
+  categoryFilter,
+  brandFilter,
+  stockFilter,
+  statusFilter,
+  categories,
+  brands,
+  onSearchChange,
+  onGroupChange,
+  onCategoryChange,
+  onBrandChange,
+  onStockChange,
+  onStatusChange,
+  resultCount,
+}) {
+  const hasFilters =
+    search ||
+    groupFilter !== 'all' ||
+    categoryFilter !== 'all' ||
+    brandFilter !== 'all' ||
+    stockFilter !== 'all' ||
+    statusFilter !== 'all'
+
+  function clearFilters() {
+    onSearchChange('')
+    onGroupChange('all')
+    onCategoryChange('all')
+    onBrandChange('all')
+    onStockChange('all')
+    onStatusChange('all')
+  }
+
+  return (
+    <section className="products-filters-card">
+      <div className="products-group-tabs">
+        {GROUP_OPTIONS.map((group) => (
+          <button
+            key={group.value}
+            type="button"
+            className={
+              groupFilter === group.value
+                ? 'active'
+                : ''
+            }
+            onClick={() =>
+              onGroupChange(group.value)
+            }
+          >
+            {group.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="products-filter-row">
+        <div className="products-search">
+          <Search size={18} />
+
+          <input
+            type="search"
+            placeholder="Search name, brand, SKU or category..."
+            value={search}
+            onChange={(event) =>
+              onSearchChange(event.target.value)
+            }
+          />
+        </div>
+
+        <div className="products-filter-select">
+          <Filter size={16} />
+
+          <select
+            value={categoryFilter}
+            onChange={(event) =>
+              onCategoryChange(event.target.value)
+            }
+          >
+            <option value="all">
+              All categories
+            </option>
+
+            {categories.map((category) => (
+              <option
+                key={category.id}
+                value={category.id}
+              >
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="products-filter-select">
+          <select
+            value={brandFilter}
+            onChange={(event) =>
+              onBrandChange(event.target.value)
+            }
+          >
+            <option value="all">
+              All brands
+            </option>
+
+            {brands.map((brand) => (
+              <option
+                key={brand}
+                value={brand}
+              >
+                {brand}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="products-filter-select">
+          <select
+            value={stockFilter}
+            onChange={(event) =>
+              onStockChange(event.target.value)
+            }
+          >
+            <option value="all">
+              All stock
+            </option>
+            <option value="in-stock">
+              In stock
+            </option>
+            <option value="low-stock">
+              Low stock
+            </option>
+            <option value="out-of-stock">
+              Out of stock
+            </option>
+          </select>
+        </div>
+
+        <div className="products-filter-select">
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              onStatusChange(event.target.value)
+            }
+          >
+            <option value="all">
+              All status
+            </option>
+            <option value="active">
+              Active
+            </option>
+            <option value="inactive">
+              Inactive
+            </option>
+          </select>
+        </div>
+
+        {hasFilters && (
+          <button
+            type="button"
+            className="products-clear-filter"
+            onClick={clearFilters}
+          >
+            <X size={15} />
+            Clear
+          </button>
+        )}
+
+        <span className="products-result-count">
+          {resultCount} result
+          {resultCount === 1 ? '' : 's'}
+        </span>
+      </div>
+    </section>
+  )
+}
+
+export default ProductFilters
+
+
+============================================================
+FILE: src/components/products/ProductForm.jsx
+============================================================
+import { useMemo, useState } from 'react'
+import { X } from 'lucide-react'
+
+const EMPTY_FORM = {
+  category: '',
+  brand: '',
+  name: '',
+  sku: '',
+  unit: 'BOTTLE',
+  initial_quantity: '0',
+  buying_price: '',
+  selling_price: '',
+  reorder_level: '5',
+  is_active: true,
+}
+
+const UNIT_OPTIONS = [
+  {
+    value: 'BOTTLE',
+    label: 'Bottle',
+  },
+  {
+    value: 'LITRE',
+    label: 'Litre',
+  },
+  {
+    value: 'CRATE',
+    label: 'Crate',
+  },
+  {
+    value: 'PIECE',
+    label: 'Piece',
+  },
+]
+
+function getInitialForm(product) {
+  if (!product) {
+    return EMPTY_FORM
+  }
+
+  return {
+    category: product.category
+      ? String(product.category)
+      : '',
+    brand: product.brand || '',
+    name: product.name || '',
+    sku: product.sku || '',
+    unit: product.unit || 'BOTTLE',
+    initial_quantity: '0',
+    buying_price: product.buying_price || '',
+    selling_price: product.selling_price || '',
+    reorder_level:
+      product.reorder_level ?? '5',
+    is_active: product.is_active ?? true,
+  }
+}
+
+function ProductForm({
+  product,
+  categories,
+  loading,
+  errors,
+  onSubmit,
+  onClose,
+}) {
+  const [form, setForm] = useState(() =>
+    getInitialForm(product),
+  )
+
+  const groupedCategories = useMemo(() => {
+    return categories.reduce((groups, category) => {
+      const groupKey =
+        category.group || 'OTHER'
+
+      const groupLabel =
+        category.group_display || 'Other'
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          value: groupKey,
+          label: groupLabel,
+          categories: [],
+        }
+      }
+
+      groups[groupKey].categories.push(category)
+
+      return groups
+    }, {})
+  }, [categories])
+
+  function handleChange(event) {
+    const { name, value, type, checked } =
+      event.target
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : value,
+    }))
+  }
+
+  function getFieldError(fieldName) {
+    const fieldError = errors?.[fieldName]
+
+    if (Array.isArray(fieldError)) {
+      return fieldError.join(' ')
+    }
+
+    return fieldError || ''
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    const payload = {
+      category: form.category,
+      brand: form.brand.trim(),
+      name: form.name.trim(),
+      sku: form.sku.trim(),
+      unit: form.unit,
+      buying_price: form.buying_price,
+      selling_price: form.selling_price,
+      reorder_level: form.reorder_level,
+      is_active: form.is_active,
+    }
+
+    if (!product) {
+      payload.initial_quantity =
+        form.initial_quantity
+    }
+
+    onSubmit(payload)
+  }
+
+  const generalError =
+    errors?.detail ||
+    errors?.non_field_errors
+
+  return (
+    <div
+      className="product-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (
+          event.target === event.currentTarget
+        ) {
+          onClose()
+        }
+      }}
+    >
+      <section
+        className="product-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-form-title"
+      >
+        <header className="product-modal-header">
+          <div>
+            <span className="product-modal-eyebrow">
+              Product catalogue
+            </span>
+
+            <h2 id="product-form-title">
+              {product
+                ? 'Edit product'
+                : 'Add product'}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            className="product-modal-close"
+            aria-label="Close product form"
+            onClick={onClose}
+            disabled={loading}
+          >
+            <X size={20} />
+          </button>
+        </header>
+
+        {generalError && (
+          <div className="product-form-error">
+            {Array.isArray(generalError)
+              ? generalError.join(' ')
+              : generalError}
+          </div>
+        )}
+
+        <form
+          className="product-form"
+          onSubmit={handleSubmit}
+        >
+          <section className="product-form-section">
+            <div className="product-form-section-heading">
+              <h3>Product details</h3>
+              <p>
+                Identify the product and its category.
+              </p>
+            </div>
+
+            <div className="product-form-grid">
+              <div className="product-form-field">
+                <label htmlFor="category">
+                  Category
+                </label>
+
+                <select
+                  id="category"
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">
+                    Select category
+                  </option>
+
+                  {Object.values(
+                    groupedCategories,
+                  ).map((group) => (
+                    <optgroup
+                      key={group.value}
+                      label={group.label}
+                    >
+                      {group.categories.map(
+                        (category) => (
+                          <option
+                            key={category.id}
+                            value={category.id}
+                          >
+                            {category.name}
+                          </option>
+                        ),
+                      )}
+                    </optgroup>
+                  ))}
+                </select>
+
+                {getFieldError('category') && (
+                  <span className="product-field-error">
+                    {getFieldError('category')}
+                  </span>
+                )}
+              </div>
+
+              <div className="product-form-field">
+                <label htmlFor="brand">
+                  Brand
+                </label>
+
+                <input
+                  id="brand"
+                  name="brand"
+                  type="text"
+                  value={form.brand}
+                  placeholder="e.g. Gordon's"
+                  onChange={handleChange}
+                />
+
+                {getFieldError('brand') && (
+                  <span className="product-field-error">
+                    {getFieldError('brand')}
+                  </span>
+                )}
+              </div>
+
+              <div className="product-form-field">
+                <label htmlFor="name">
+                  Product name
+                </label>
+
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={form.name}
+                  placeholder="e.g. London Dry Gin"
+                  onChange={handleChange}
+                  required
+                />
+
+                {getFieldError('name') && (
+                  <span className="product-field-error">
+                    {getFieldError('name')}
+                  </span>
+                )}
+              </div>
+
+              <div className="product-form-field">
+                <label htmlFor="sku">
+                  SKU
+                </label>
+
+                <input
+                  id="sku"
+                  name="sku"
+                  type="text"
+                  value={form.sku}
+                  placeholder="e.g. GIN-001"
+                  onChange={handleChange}
+                />
+
+                {getFieldError('sku') && (
+                  <span className="product-field-error">
+                    {getFieldError('sku')}
+                  </span>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="product-form-section">
+            <div className="product-form-section-heading">
+              <h3>Pricing and stock</h3>
+              <p>
+                Set prices and inventory thresholds.
+              </p>
+            </div>
+
+            <div className="product-form-grid">
+              <div className="product-form-field">
+                <label htmlFor="unit">
+                  Unit
+                </label>
+
+                <select
+                  id="unit"
+                  name="unit"
+                  value={form.unit}
+                  onChange={handleChange}
+                  required
+                >
+                  {UNIT_OPTIONS.map((unit) => (
+                    <option
+                      key={unit.value}
+                      value={unit.value}
+                    >
+                      {unit.label}
+                    </option>
+                  ))}
+                </select>
+
+                {getFieldError('unit') && (
+                  <span className="product-field-error">
+                    {getFieldError('unit')}
+                  </span>
+                )}
+              </div>
+
+              {!product && (
+                <div className="product-form-field">
+                  <label htmlFor="initial_quantity">
+                    Initial quantity
+                  </label>
+
+                  <input
+                    id="initial_quantity"
+                    name="initial_quantity"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.initial_quantity}
+                    onChange={handleChange}
+                  />
+
+                  {getFieldError(
+                    'initial_quantity',
+                  ) && (
+                    <span className="product-field-error">
+                      {getFieldError(
+                        'initial_quantity',
+                      )}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="product-form-field">
+                <label htmlFor="buying_price">
+                  Buying price
+                </label>
+
+                <input
+                  id="buying_price"
+                  name="buying_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.buying_price}
+                  placeholder="0.00"
+                  onChange={handleChange}
+                  required
+                />
+
+                {getFieldError('buying_price') && (
+                  <span className="product-field-error">
+                    {getFieldError('buying_price')}
+                  </span>
+                )}
+              </div>
+
+              <div className="product-form-field">
+                <label htmlFor="selling_price">
+                  Selling price
+                </label>
+
+                <input
+                  id="selling_price"
+                  name="selling_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.selling_price}
+                  placeholder="0.00"
+                  onChange={handleChange}
+                  required
+                />
+
+                {getFieldError('selling_price') && (
+                  <span className="product-field-error">
+                    {getFieldError('selling_price')}
+                  </span>
+                )}
+              </div>
+
+              <div className="product-form-field">
+                <label htmlFor="reorder_level">
+                  Reorder level
+                </label>
+
+                <input
+                  id="reorder_level"
+                  name="reorder_level"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.reorder_level}
+                  onChange={handleChange}
+                  required
+                />
+
+                {getFieldError('reorder_level') && (
+                  <span className="product-field-error">
+                    {getFieldError('reorder_level')}
+                  </span>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="product-form-section">
+            <label className="product-form-checkbox">
+              <input
+                type="checkbox"
+                name="is_active"
+                checked={form.is_active}
+                onChange={handleChange}
+              />
+
+              <span>
+                <strong>Active product</strong>
+                <small>
+                  Allow this product to appear in
+                  active catalogue views.
+                </small>
+              </span>
+            </label>
+          </section>
+
+          <footer className="product-form-actions">
+            <button
+              type="button"
+              className="product-secondary-button"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="product-primary-button"
+              disabled={loading}
+            >
+              {loading
+                ? 'Saving...'
+                : product
+                  ? 'Update product'
+                  : 'Create product'}
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+export default ProductForm
+
+
+============================================================
+FILE: src/services/products.js
+============================================================
+import api from './api'
+
+export async function getProducts(businessId) {
+  const response = await api.get(
+    `businesses/${businessId}/products/`,
+  )
+
+  return response.data
+}
+
+export async function getCategories(businessId) {
+  const response = await api.get(
+    `businesses/${businessId}/categories/`,
+  )
+
+  return response.data
+}
+
+export async function createProduct(
+  businessId,
+  product,
+) {
+  const response = await api.post(
+    `businesses/${businessId}/products/`,
+    product,
+  )
+
+  return response.data
+}
+
+export async function updateProduct(
+  businessId,
+  productId,
+  product,
+) {
+  const response = await api.patch(
+    `businesses/${businessId}/products/${productId}/`,
+    product,
+  )
+
+  return response.data
+}
+
+export async function deleteProduct(
+  businessId,
+  productId,
+) {
+  await api.delete(
+    `businesses/${businessId}/products/${productId}/`,
+  )
+}
+
+export async function createCategory(
+  businessId,
+  category,
+) {
+  const response = await api.post(
+    `businesses/${businessId}/categories/`,
+    category,
+  )
+
+  return response.data
+}
+
+
+============================================================
+FILE: src/services/api.js
+============================================================
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    'http://127.0.0.1:8000/api/',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+api.interceptors.request.use(
+  (config) => {
+    const accessToken = localStorage.getItem('stockpilot-access')
+
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
+    }
+
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
+export default api

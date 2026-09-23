@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.test import TestCase
+from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -86,6 +87,10 @@ class ProductAPITests(TestCase):
 
         return payload
 
+    # ------------------------------------------------------------------
+    # Category tests
+    # ------------------------------------------------------------------
+
     def test_authenticated_user_can_create_category(self):
         response = self.client.post(
             f"/api/businesses/{self.business.id}/categories/",
@@ -96,7 +101,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
 
         category = Category.objects.get(
             business=self.business,
@@ -118,8 +126,15 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/categories/"
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
 
         self.assertEqual(
             response.data[0]["name"],
@@ -131,7 +146,14 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.other_business.id}/categories/"
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    # ------------------------------------------------------------------
+    # Product creation tests
+    # ------------------------------------------------------------------
 
     def test_authenticated_user_can_create_product(self):
         response = self.client.post(
@@ -140,7 +162,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
 
         product = Product.objects.get(
             business=self.business,
@@ -172,6 +197,35 @@ class ProductAPITests(TestCase):
             "Spirits",
         )
 
+    def test_authenticated_user_can_create_product_with_opening_stock(self):
+        response = self.client.post(
+            f"/api/businesses/{self.business.id}/products/",
+            self.product_payload(
+                initial_quantity="25.00",
+            ),
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        product = Product.objects.get(
+            business=self.business,
+            sku="SMIRNOFF-750",
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            Decimal("25.00"),
+        )
+
+        self.assertEqual(
+            response.data["stock_quantity"],
+            "25.00",
+        )
+
     def test_product_cannot_use_category_from_another_business(self):
         response = self.client.post(
             f"/api/businesses/{self.business.id}/products/",
@@ -181,7 +235,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
         self.assertIn(
             "detail",
@@ -209,7 +266,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
         self.assertIn(
             "selling_price",
@@ -220,6 +280,10 @@ class ProductAPITests(TestCase):
             response.data["selling_price"][0],
             "Selling price cannot be lower than buying price.",
         )
+
+    # ------------------------------------------------------------------
+    # Product list / isolation tests
+    # ------------------------------------------------------------------
 
     def test_authenticated_user_can_list_products(self):
         Product.objects.create(
@@ -238,8 +302,15 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/products/"
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
 
         self.assertEqual(
             response.data[0]["name"],
@@ -281,8 +352,15 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/products/"
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
 
         self.assertEqual(
             response.data[0]["id"],
@@ -293,6 +371,10 @@ class ProductAPITests(TestCase):
             response.data[0]["name"],
             "Own Product",
         )
+
+    # ------------------------------------------------------------------
+    # Product update tests
+    # ------------------------------------------------------------------
 
     def test_authenticated_user_can_update_product(self):
         product = Product.objects.create(
@@ -315,7 +397,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
         product.refresh_from_db()
 
@@ -329,7 +414,90 @@ class ProductAPITests(TestCase):
             Decimal("800.00"),
         )
 
-    def test_product_update_cannot_use_category_from_another_business(self):
+    def test_product_update_does_not_change_stock(self):
+        product = Product.objects.create(
+            business=self.business,
+            category=self.category,
+            name="Stock Protected Product",
+            sku="STOCK-001",
+            unit=Product.Unit.BOTTLE,
+            buying_price=Decimal("500.00"),
+            selling_price=Decimal("700.00"),
+            stock_quantity=Decimal("40.00"),
+            reorder_level=Decimal("5.00"),
+        )
+
+        response = self.client.patch(
+            f"/api/businesses/{self.business.id}/products/{product.id}/",
+            {
+                "name": "Updated Stock Protected Product",
+                "selling_price": "750.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        product.refresh_from_db()
+
+        self.assertEqual(
+            product.name,
+            "Updated Stock Protected Product",
+        )
+
+        self.assertEqual(
+            product.selling_price,
+            Decimal("750.00"),
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            Decimal("40.00"),
+        )
+
+    def test_product_update_cannot_change_opening_quantity(self):
+        product = Product.objects.create(
+            business=self.business,
+            category=self.category,
+            name="Opening Stock Product",
+            sku="OPENING-001",
+            unit=Product.Unit.BOTTLE,
+            buying_price=Decimal("500.00"),
+            selling_price=Decimal("700.00"),
+            stock_quantity=Decimal("20.00"),
+        )
+
+        response = self.client.patch(
+            f"/api/businesses/{self.business.id}/products/{product.id}/",
+            {
+                "initial_quantity": "100.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "initial_quantity",
+            response.data,
+        )
+
+        product.refresh_from_db()
+
+        self.assertEqual(
+            product.stock_quantity,
+            Decimal("20.00"),
+        )
+
+    def test_product_update_cannot_use_category_from_another_business(
+        self,
+    ):
         product = Product.objects.create(
             business=self.business,
             category=self.category,
@@ -348,7 +516,10 @@ class ProductAPITests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
         self.assertIn(
             "detail",
@@ -361,6 +532,88 @@ class ProductAPITests(TestCase):
             product.category_id,
             self.category.id,
         )
+
+    # ------------------------------------------------------------------
+    # Product lifecycle tests
+    # ------------------------------------------------------------------
+
+    def test_product_can_be_deactivated(self):
+        product = Product.objects.create(
+            business=self.business,
+            category=self.category,
+            name="Active Product",
+            sku="STATUS-001",
+            unit=Product.Unit.BOTTLE,
+            buying_price=Decimal("500.00"),
+            selling_price=Decimal("700.00"),
+            stock_quantity=Decimal("15.00"),
+            is_active=True,
+        )
+
+        response = self.client.patch(
+            f"/api/businesses/{self.business.id}/products/{product.id}/",
+            {
+                "is_active": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        product.refresh_from_db()
+
+        self.assertFalse(
+            product.is_active
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            Decimal("15.00"),
+        )
+
+    def test_product_can_be_reactivated(self):
+        product = Product.objects.create(
+            business=self.business,
+            category=self.category,
+            name="Inactive Product",
+            sku="STATUS-002",
+            unit=Product.Unit.BOTTLE,
+            buying_price=Decimal("500.00"),
+            selling_price=Decimal("700.00"),
+            stock_quantity=Decimal("12.00"),
+            is_active=False,
+        )
+
+        response = self.client.patch(
+            f"/api/businesses/{self.business.id}/products/{product.id}/",
+            {
+                "is_active": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        product.refresh_from_db()
+
+        self.assertTrue(
+            product.is_active
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            Decimal("12.00"),
+        )
+
+    # ------------------------------------------------------------------
+    # Product detail / isolation tests
+    # ------------------------------------------------------------------
 
     def test_user_cannot_access_product_from_another_business(self):
         product = Product.objects.create(
@@ -377,7 +630,10 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/products/{product.id}/"
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
 
     def test_product_detail_returns_product(self):
         product = Product.objects.create(
@@ -396,7 +652,10 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/products/{product.id}/"
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
         self.assertEqual(
             response.data["name"],
@@ -413,6 +672,42 @@ class ProductAPITests(TestCase):
             False,
         )
 
+    # ------------------------------------------------------------------
+    # Delete protection
+    # ------------------------------------------------------------------
+
+    def test_product_cannot_be_deleted(self):
+        product = Product.objects.create(
+            business=self.business,
+            category=self.category,
+            name="Protected Product",
+            sku="DELETE-001",
+            unit=Product.Unit.BOTTLE,
+            buying_price=Decimal("500.00"),
+            selling_price=Decimal("700.00"),
+            stock_quantity=Decimal("10.00"),
+        )
+
+        response = self.client.delete(
+            f"/api/businesses/{self.business.id}/products/{product.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertTrue(
+            Product.objects.filter(
+                id=product.id,
+                business=self.business,
+            ).exists()
+        )
+
+    # ------------------------------------------------------------------
+    # Authentication tests
+    # ------------------------------------------------------------------
+
     def test_unauthenticated_user_cannot_access_products(self):
         self.client.credentials()
 
@@ -420,7 +715,10 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/products/"
         )
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
 
     def test_unauthenticated_user_cannot_access_categories(self):
         self.client.credentials()
@@ -429,4 +727,7 @@ class ProductAPITests(TestCase):
             f"/api/businesses/{self.business.id}/categories/"
         )
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )

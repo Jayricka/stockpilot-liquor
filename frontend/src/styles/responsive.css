@@ -205,3 +205,41 @@
     width: 100%;
   }
 }
+@media (max-width: 900px) {
+  .inventory-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .inventory-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .inventory-business-selector {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .inventory-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inventory-search {
+    width: 100%;
+  }
+
+  .inventory-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-stat {
+    padding: 16px;
+  }
+
+  .inventory-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

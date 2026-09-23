@@ -1,0 +1,129 @@
+.inventory-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.inventory-stat {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.inventory-stat span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.inventory-stat strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.inventory-table-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.inventory-table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+}
+
+.inventory-table-heading span:first-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.inventory-table-heading h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.inventory-count {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.inventory-table-wrapper {
+  overflow-x: auto;
+}
+
+.inventory-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.inventory-table th,
+.inventory-table td {
+  padding: 15px 22px;
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.inventory-table th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.inventory-table td {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.inventory-table td strong {
+  color: var(--text);
+}
+
+.inventory-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.status-success {
+  background: #e3f7ec;
+  color: #147548;
+}
+
+.status-warning {
+  background: #fff3d6;
+  color: #9a6500;
+}
+
+.status-danger {
+  background: #ffe4e4;
+  color: #b52d2d;
+}
+
+.inventory-empty {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.inventory-empty h3 {
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.inventory-empty p {
+  margin: 0;
+  color: var(--muted);
+}

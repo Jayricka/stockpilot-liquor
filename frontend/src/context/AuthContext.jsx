@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -8,7 +10,9 @@ import {
 const AuthContext = createContext(null)
 
 function getStoredUser() {
-  const storedUser = localStorage.getItem('stockpilot-user')
+  const storedUser = localStorage.getItem(
+    'stockpilot-user',
+  )
 
   if (!storedUser) {
     return null
