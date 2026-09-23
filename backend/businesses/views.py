@@ -6,6 +6,7 @@ from .models import (
     Business,
     BusinessMembership,
 )
+from .permissions import CanManageBusiness
 from .serializers import (
     BusinessMemberSerializer,
     BusinessSerializer,
@@ -57,6 +58,23 @@ class BusinessListCreateView(
             response_serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class BusinessDetailView(
+    generics.RetrieveUpdateAPIView,
+):
+    serializer_class = BusinessSerializer
+    permission_classes = [
+        IsAuthenticated,
+        CanManageBusiness,
+    ]
+    lookup_url_kwarg = "business_id"
+
+    def get_queryset(self):
+        return Business.objects.filter(
+            memberships__user=self.request.user,
+            memberships__is_active=True,
+        ).distinct()
 
 
 class BusinessMemberListView(
