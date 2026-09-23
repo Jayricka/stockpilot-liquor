@@ -139,12 +139,6 @@
     grid-template-columns: 1fr;
   }
 
-  .pricing-card {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 35px 27px;
-  }
-
   .contact-section {
     flex-direction: column;
     align-items: flex-start;

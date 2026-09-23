@@ -22,3 +22,9 @@
 
 @import './styles/sales.css';
 @import './styles/suppliers.css';
+
+@import './styles/deliveries.css';
+@import './styles/reports.css';
+@import './styles/purchases.css';
+
+@import './styles/settings.css';

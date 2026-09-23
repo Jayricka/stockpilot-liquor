@@ -22,7 +22,11 @@ import Dashboard from './pages/dashboard/Dashboard'
 import Inventory from './pages/inventory/Inventory'
 import Products from './pages/products/Products'
 import Sales from './pages/sales/Sales'
+import Purchases from './pages/purchases/Purchases'
 import Suppliers from './pages/suppliers/Suppliers'
+import Deliveries from './pages/deliveries/Deliveries'
+import Reports from './pages/reports/Reports'
+import Settings from './pages/settings/Settings'
 
 function LandingPage() {
   return (
@@ -80,9 +84,7 @@ function App() {
 
         <Route
           path="/purchases"
-          element={
-            <ComingSoon title="Purchases" />
-          }
+          element={<Purchases />}
         />
 
         <Route
@@ -92,23 +94,17 @@ function App() {
 
         <Route
           path="/deliveries"
-          element={
-            <ComingSoon title="Deliveries" />
-          }
+          element={<Deliveries />}
         />
 
         <Route
           path="/reports"
-          element={
-            <ComingSoon title="Reports" />
-          }
+          element={<Reports />}
         />
 
         <Route
           path="/settings"
-          element={
-            <ComingSoon title="Settings" />
-          }
+          element={<Settings />}
         />
       </Route>
 
@@ -122,21 +118,6 @@ function App() {
         }
       />
     </Routes>
-  )
-}
-
-function ComingSoon({ title }) {
-  return (
-    <section className="coming-soon">
-      <span>StockPilot</span>
-
-      <h2>{title}</h2>
-
-      <p>
-        This workspace is being connected to your
-        Django backend.
-      </p>
-    </section>
   )
 }
 
