@@ -5,10 +5,16 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     # Django admin
-    path("admin/", admin.site.urls),
+    path(
+        "admin/",
+        admin.site.urls,
+    ),
 
     # Authentication
-    path("api/auth/", include("accounts.urls")),
+    path(
+        "api/auth/",
+        include("accounts.urls"),
+    ),
     path(
         "api/auth/token/refresh/",
         TokenRefreshView.as_view(),
@@ -16,23 +22,50 @@ urlpatterns = [
     ),
 
     # Business management
-    path("api/businesses/", include("businesses.urls")),
+    path(
+        "api/businesses/",
+        include("businesses.urls"),
+    ),
 
     # Products and categories
-    path("api/", include("products.urls")),
+    path(
+        "api/",
+        include("products.urls"),
+    ),
 
     # Suppliers
-    path("api/", include("suppliers.urls")),
+    path(
+        "api/",
+        include("suppliers.urls"),
+    ),
 
     # Purchases and inventory
-    path("api/", include("inventory.urls")),
+    path(
+        "api/",
+        include("inventory.urls"),
+    ),
 
     # Sales
-    path("api/", include("sales.urls")),
+    path(
+        "api/",
+        include("sales.urls"),
+    ),
 
     # Deliveries
-    path("api/", include("deliveries.urls")),
+    path(
+        "api/",
+        include("deliveries.urls"),
+    ),
 
     # Reports and dashboard
-    path("api/", include("reports.urls")),
+    path(
+        "api/",
+        include("reports.urls"),
+    ),
+
+    # Public interactive demo
+    path(
+        "api/demo/",
+        include("demo.urls"),
+    ),
 ]
