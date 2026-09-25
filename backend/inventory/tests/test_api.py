@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+from billing.models import Plan
+from billing.services.subscriptions import SubscriptionService
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -44,6 +47,19 @@ class PurchaseAPITests(APITestCase):
             user=self.other_user,
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
+        )
+
+        plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+        )
+
+        SubscriptionService.create_trial(
+            business=self.business,
+            plan=plan,
+        )
+        SubscriptionService.create_trial(
+            business=self.other_business,
+            plan=plan,
         )
 
         category = Category.objects.create(
@@ -158,20 +174,43 @@ class PurchaseAPITests(APITestCase):
     def test_create_purchase(self):
         purchase = self.create_purchase()
 
-        self.assertEqual(purchase.status, Purchase.Status.DRAFT)
-        self.assertEqual(purchase.total_amount, Decimal("4000.00"))
-        self.assertEqual(purchase.items.count(), 1)
+        self.assertEqual(
+            purchase.status,
+            Purchase.Status.DRAFT,
+        )
+        self.assertEqual(
+            purchase.total_amount,
+            Decimal("4000.00"),
+        )
+        self.assertEqual(
+            purchase.items.count(),
+            1,
+        )
 
     def test_list_and_retrieve_purchase(self):
         purchase = self.create_purchase()
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
 
-        response = self.client.get(self.detail_url(purchase))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["reference_number"], "PO-001")
+        response = self.client.get(
+            self.detail_url(purchase),
+        )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            response.data["reference_number"],
+            "PO-001",
+        )
 
     def test_business_isolation(self):
         Purchase.objects.create(
@@ -184,8 +223,14 @@ class PurchaseAPITests(APITestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            response.data,
+            [],
+        )
 
     def test_invalid_supplier_is_rejected(self):
         response = self.client.post(
@@ -310,7 +355,9 @@ class PurchaseAPITests(APITestCase):
     def test_purchase_cannot_be_completed_twice(self):
         purchase = self.create_purchase()
 
-        self.client.post(self.complete_url(purchase))
+        self.client.post(
+            self.complete_url(purchase),
+        )
 
         response = self.client.post(
             self.complete_url(purchase),
@@ -352,7 +399,9 @@ class PurchaseAPITests(APITestCase):
     def test_cancelled_purchase_cannot_be_completed(self):
         purchase = self.create_purchase()
 
-        self.client.post(self.cancel_url(purchase))
+        self.client.post(
+            self.cancel_url(purchase),
+        )
 
         response = self.client.post(
             self.complete_url(purchase),
@@ -366,7 +415,9 @@ class PurchaseAPITests(APITestCase):
     def test_completed_purchase_cannot_be_cancelled(self):
         purchase = self.create_purchase()
 
-        self.client.post(self.complete_url(purchase))
+        self.client.post(
+            self.complete_url(purchase),
+        )
 
         response = self.client.post(
             self.cancel_url(purchase),

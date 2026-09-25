@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+from billing.models import Plan
+from billing.services.subscriptions import SubscriptionService
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -47,6 +50,19 @@ class SaleAPITests(APITestCase):
             user=self.other_user,
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
+        )
+
+        plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+        )
+
+        SubscriptionService.create_trial(
+            business=self.business,
+            plan=plan,
+        )
+        SubscriptionService.create_trial(
+            business=self.other_business,
+            plan=plan,
         )
 
         category = Category.objects.create(
@@ -183,7 +199,7 @@ class SaleAPITests(APITestCase):
         )
 
         response = self.client.get(
-            self.detail_url(sale)
+            self.detail_url(sale),
         )
 
         self.assertEqual(

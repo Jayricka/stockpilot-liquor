@@ -3,6 +3,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from billing.permissions import HasOperationalAccess
 from businesses.models import BusinessMembership
 
 from .models import Category, Product
@@ -39,7 +40,10 @@ class CategoryListCreateView(
     generics.ListCreateAPIView,
 ):
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_queryset(self):
         business = self.get_business()
@@ -61,7 +65,7 @@ class CategoryListCreateView(
         except ValueError as exc:
             raise ValidationError(
                 {"detail": str(exc)}
-            )
+            ) from exc
 
         serializer.instance = category
 
@@ -71,7 +75,10 @@ class CategoryDetailView(
     generics.RetrieveUpdateDestroyAPIView,
 ):
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_queryset(self):
         business = self.get_business()
@@ -89,7 +96,7 @@ class CategoryDetailView(
         except ValueError as exc:
             raise ValidationError(
                 {"detail": str(exc)}
-            )
+            ) from exc
 
 
 class ProductListCreateView(
@@ -97,7 +104,10 @@ class ProductListCreateView(
     generics.ListCreateAPIView,
 ):
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_queryset(self):
         business = self.get_business()
@@ -120,7 +130,7 @@ class ProductListCreateView(
         except ValueError as exc:
             raise ValidationError(
                 {"detail": str(exc)}
-            )
+            ) from exc
 
         serializer.instance = product
 
@@ -130,7 +140,10 @@ class ProductDetailView(
     generics.RetrieveUpdateAPIView,
 ):
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_queryset(self):
         business = self.get_business()
@@ -161,7 +174,7 @@ class ProductDetailView(
         except ValueError as exc:
             raise ValidationError(
                 {"detail": str(exc)}
-            )
+            ) from exc
 
         return Response(
             serializer.data,

@@ -6,6 +6,8 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User
+from billing.models import Plan
+from billing.services.subscriptions import SubscriptionService
 from businesses.models import Business, BusinessMembership
 from products.models import Category, Product
 
@@ -51,6 +53,20 @@ class ProductAPITests(TestCase):
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
             is_active=True,
+        )
+
+        plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+        )
+
+        SubscriptionService.create_trial(
+            business=self.business,
+            plan=plan,
+        )
+
+        SubscriptionService.create_trial(
+            business=self.other_business,
+            plan=plan,
         )
 
         self.category = Category.objects.create(
@@ -197,7 +213,9 @@ class ProductAPITests(TestCase):
             "Spirits",
         )
 
-    def test_authenticated_user_can_create_product_with_opening_stock(self):
+    def test_authenticated_user_can_create_product_with_opening_stock(
+        self,
+    ):
         response = self.client.post(
             f"/api/businesses/{self.business.id}/products/",
             self.product_payload(

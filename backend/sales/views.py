@@ -4,6 +4,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from billing.permissions import HasOperationalAccess
 from businesses.models import Business
 
 from .models import Sale
@@ -12,7 +13,10 @@ from .services import SaleService
 
 
 class BusinessAccessMixin:
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_business(self):
         return get_object_or_404(
@@ -42,7 +46,9 @@ class SaleListCreateView(
         sale_status = self.request.query_params.get("status")
 
         if sale_status:
-            queryset = queryset.filter(status=sale_status)
+            queryset = queryset.filter(
+                status=sale_status
+            )
 
         payment_method = self.request.query_params.get(
             "payment_method"
@@ -63,8 +69,13 @@ class SaleListCreateView(
     def create(self, request, *args, **kwargs):
         business = self.get_business()
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         validated_data = serializer.validated_data
         items_data = validated_data.pop("items")
