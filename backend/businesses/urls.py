@@ -1,4 +1,5 @@
 from django.urls import path
+from .onboarding_views import BusinessOnboardingView
 
 from .views import (
     BusinessDetailView,
@@ -22,4 +23,9 @@ urlpatterns = [
         BusinessMemberListView.as_view(),
         name="business-member-list",
     ),
+    path(
+    "onboard/",
+    BusinessOnboardingView.as_view(),
+    name="business-onboard",
+),
 ]

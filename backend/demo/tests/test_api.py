@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from inventory.models import StockMovement
 
-from .services import DemoService
+from demo.services import DemoService
 
 
 class DemoAPITests(APITestCase):

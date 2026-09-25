@@ -1,5 +1,9 @@
 from django.db import transaction
 
+from billing.services.subscriptions import (
+    SubscriptionService,
+)
+
 from .models import Business, BusinessMembership
 
 
@@ -39,3 +43,23 @@ class BusinessService:
         )
 
         return business
+
+
+class BusinessOnboardingService:
+
+    @staticmethod
+    @transaction.atomic
+    def onboard(user, validated_data):
+        plan = validated_data.pop("plan")
+
+        business = BusinessService.create_business(
+            user=user,
+            validated_data=validated_data,
+        )
+
+        subscription = SubscriptionService.create_trial(
+            business=business,
+            plan=plan,
+        )
+
+        return business, subscription

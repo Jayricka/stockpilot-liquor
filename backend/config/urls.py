@@ -68,4 +68,8 @@ urlpatterns = [
         "api/demo/",
         include("demo.urls"),
     ),
+    path(
+    "api/billing/",
+    include("billing.urls"),
+    ),
 ]

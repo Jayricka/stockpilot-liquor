@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "deliveries",
     "reports",
     "demo",
+    "billing",
 ]
 
 
