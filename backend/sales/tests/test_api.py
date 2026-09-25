@@ -8,19 +8,20 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User
 from businesses.models import Business, BusinessMembership
+from inventory.models import StockMovement
 from products.models import Category, Product
-from suppliers.models import Supplier
 
-from .models import Purchase, StockMovement
+from sales.models import Sale
 
 
-class PurchaseAPITests(APITestCase):
+class SaleAPITests(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
             email="owner@example.com",
             password="testpass123",
         )
+
         self.other_user = User.objects.create_user(
             email="other@example.com",
             password="testpass123",
@@ -30,6 +31,7 @@ class PurchaseAPITests(APITestCase):
             name="Test Liquor Store",
             phone="0712345678",
         )
+
         self.other_business = Business.objects.create(
             name="Other Liquor Store",
             phone="0798765432",
@@ -40,6 +42,7 @@ class PurchaseAPITests(APITestCase):
             business=self.business,
             role=BusinessMembership.Role.OWNER,
         )
+
         BusinessMembership.objects.create(
             user=self.other_user,
             business=self.other_business,
@@ -50,6 +53,7 @@ class PurchaseAPITests(APITestCase):
             business=self.business,
             name="Spirits",
         )
+
         other_category = Category.objects.create(
             business=self.other_business,
             name="Spirits",
@@ -73,21 +77,11 @@ class PurchaseAPITests(APITestCase):
             sku="OTH-001",
             buying_price=Decimal("700.00"),
             selling_price=Decimal("900.00"),
-        )
-
-        self.supplier = Supplier.objects.create(
-            business=self.business,
-            name="Test Distributor",
-            phone="0700000000",
-        )
-        self.other_supplier = Supplier.objects.create(
-            business=self.other_business,
-            name="Other Distributor",
-            phone="0700000001",
+            stock_quantity=Decimal("10.00"),
         )
 
         self.url = reverse(
-            "purchase-list-create",
+            "sale-list-create",
             kwargs={"business_id": self.business.id},
         )
 
@@ -95,114 +89,134 @@ class PurchaseAPITests(APITestCase):
 
     def payload(
         self,
-        reference="PO-001",
-        supplier=None,
+        invoice="INV-001",
         product=None,
-        quantity="5.00",
-        unit_cost="800.00",
+        quantity="2.00",
+        discount="0.00",
     ):
         return {
-            "supplier": (supplier or self.supplier).id,
-            "reference_number": reference,
-            "purchase_date": timezone.localdate().isoformat(),
+            "invoice_number": invoice,
+            "payment_method": Sale.PaymentMethod.CASH,
+            "sale_date": timezone.localdate().isoformat(),
+            "discount_amount": discount,
+            "notes": "",
             "items": [
                 {
                     "product": (product or self.product).id,
                     "quantity": quantity,
-                    "unit_cost": unit_cost,
                 }
             ],
         }
 
-    def create_purchase(self, **kwargs):
+    def create_sale(self, **kwargs):
         response = self.client.post(
             self.url,
             self.payload(**kwargs),
             format="json",
         )
+
         self.assertEqual(
             response.status_code,
             status.HTTP_201_CREATED,
         )
-        return Purchase.objects.get(
-            reference_number=kwargs.get("reference", "PO-001"),
+
+        return Sale.objects.get(
+            invoice_number=kwargs.get(
+                "invoice",
+                "INV-001",
+            ),
         )
 
-    def detail_url(self, purchase):
+    def complete_url(self, sale):
         return reverse(
-            "purchase-detail",
+            "sale-complete",
             kwargs={
-                "business_id": purchase.business_id,
-                "pk": purchase.id,
+                "business_id": sale.business_id,
+                "pk": sale.id,
             },
         )
 
-    def complete_url(self, purchase):
+    def cancel_url(self, sale):
         return reverse(
-            "purchase-complete",
+            "sale-cancel",
             kwargs={
-                "business_id": purchase.business_id,
-                "pk": purchase.id,
+                "business_id": sale.business_id,
+                "pk": sale.id,
             },
         )
 
-    def cancel_url(self, purchase):
+    def detail_url(self, sale):
         return reverse(
-            "purchase-cancel",
+            "sale-detail",
             kwargs={
-                "business_id": purchase.business_id,
-                "pk": purchase.id,
+                "business_id": sale.business_id,
+                "pk": sale.id,
             },
         )
 
-    def test_create_purchase(self):
-        purchase = self.create_purchase()
+    def test_create_sale(self):
+        sale = self.create_sale()
 
-        self.assertEqual(purchase.status, Purchase.Status.DRAFT)
-        self.assertEqual(purchase.total_amount, Decimal("4000.00"))
-        self.assertEqual(purchase.items.count(), 1)
-
-    def test_list_and_retrieve_purchase(self):
-        purchase = self.create_purchase()
-
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
-        response = self.client.get(self.detail_url(purchase))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["reference_number"], "PO-001")
-
-    def test_business_isolation(self):
-        Purchase.objects.create(
-            business=self.other_business,
-            supplier=self.other_supplier,
-            created_by=self.other_user,
-            reference_number="OTHER-001",
-            purchase_date=timezone.localdate(),
+        self.assertEqual(
+            sale.status,
+            Sale.Status.DRAFT,
         )
+
+        self.assertEqual(
+            sale.items.count(),
+            1,
+        )
+
+    def test_list_and_retrieve_sale(self):
+        sale = self.create_sale()
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
-    def test_invalid_supplier_is_rejected(self):
-        response = self.client.post(
-            self.url,
-            self.payload(supplier=self.other_supplier),
-            format="json",
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        response = self.client.get(
+            self.detail_url(sale)
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["invoice_number"],
+            "INV-001",
+        )
+
+    def test_business_isolation(self):
+        response = self.client.get(
+            reverse(
+                "sale-list-create",
+                kwargs={
+                    "business_id": self.other_business.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
         )
 
     def test_invalid_product_is_rejected(self):
         response = self.client.post(
             self.url,
-            self.payload(product=self.other_product),
+            self.payload(
+                product=self.other_product,
+            ),
             format="json",
         )
 
@@ -214,7 +228,9 @@ class PurchaseAPITests(APITestCase):
     def test_invalid_items_are_rejected(self):
         response = self.client.post(
             self.url,
-            self.payload(quantity="-1.00"),
+            self.payload(
+                quantity="-1.00",
+            ),
             format="json",
         )
 
@@ -237,12 +253,12 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_duplicate_reference_is_rejected(self):
-        self.create_purchase(reference="PO-DUP")
+    def test_duplicate_invoice_is_rejected(self):
+        self.create_sale(invoice="INV-DUP")
 
         response = self.client.post(
             self.url,
-            self.payload(reference="PO-DUP"),
+            self.payload(invoice="INV-DUP"),
             format="json",
         )
 
@@ -251,11 +267,13 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_complete_purchase_updates_stock(self):
-        purchase = self.create_purchase()
+    def test_complete_sale_reduces_stock(self):
+        sale = self.create_sale(
+            quantity="2.00",
+        )
 
         response = self.client.post(
-            self.complete_url(purchase),
+            self.complete_url(sale),
         )
 
         self.assertEqual(
@@ -263,57 +281,90 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        purchase.refresh_from_db()
+        sale.refresh_from_db()
         self.product.refresh_from_db()
 
         self.assertEqual(
-            purchase.status,
-            Purchase.Status.COMPLETED,
+            sale.status,
+            Sale.Status.COMPLETED,
         )
+
         self.assertEqual(
             self.product.stock_quantity,
-            Decimal("15.00"),
-        )
-        self.assertEqual(
-            purchase.total_amount,
-            Decimal("4000.00"),
+            Decimal("8.00"),
         )
 
-    def test_complete_purchase_creates_stock_movement(self):
-        purchase = self.create_purchase()
+    def test_complete_sale_calculates_totals(self):
+        sale = self.create_sale(
+            quantity="2.00",
+        )
 
         self.client.post(
-            self.complete_url(purchase),
+            self.complete_url(sale),
+        )
+
+        sale.refresh_from_db()
+
+        self.assertEqual(
+            sale.subtotal,
+            Decimal("2000.00"),
+        )
+
+        self.assertEqual(
+            sale.total_amount,
+            Decimal("2000.00"),
+        )
+
+        self.assertEqual(
+            sale.total_cost,
+            Decimal("1600.00"),
+        )
+
+        self.assertEqual(
+            sale.gross_profit,
+            Decimal("400.00"),
+        )
+
+    def test_complete_sale_creates_stock_movement(self):
+        sale = self.create_sale(
+            quantity="2.00",
+        )
+
+        self.client.post(
+            self.complete_url(sale),
         )
 
         movement = StockMovement.objects.get(
-            reference_id=purchase.id,
+            reference_id=sale.id,
         )
 
         self.assertEqual(
             movement.product,
             self.product,
         )
+
         self.assertEqual(
             movement.quantity,
-            Decimal("5.00"),
+            Decimal("-2.00"),
         )
+
         self.assertEqual(
             movement.movement_type,
-            StockMovement.MovementType.PURCHASE,
+            StockMovement.MovementType.SALE,
         )
+
         self.assertEqual(
             movement.balance_after,
-            Decimal("15.00"),
+            Decimal("8.00"),
         )
 
-    def test_purchase_cannot_be_completed_twice(self):
-        purchase = self.create_purchase()
-
-        self.client.post(self.complete_url(purchase))
+    def test_overselling_is_rejected(self):
+        sale = self.create_sale(
+            quantity="11.00",
+        )
 
         response = self.client.post(
-            self.complete_url(purchase),
+            self.complete_url(sale),
         )
 
         self.assertEqual(
@@ -321,11 +372,40 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_cancel_purchase(self):
-        purchase = self.create_purchase()
+        sale.refresh_from_db()
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            sale.status,
+            Sale.Status.DRAFT,
+        )
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            Decimal("10.00"),
+        )
+
+    def test_sale_cannot_be_completed_twice(self):
+        sale = self.create_sale()
+
+        self.client.post(
+            self.complete_url(sale),
+        )
 
         response = self.client.post(
-            self.cancel_url(purchase),
+            self.complete_url(sale),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_cancel_sale(self):
+        sale = self.create_sale()
+
+        response = self.client.post(
+            self.cancel_url(sale),
         )
 
         self.assertEqual(
@@ -333,29 +413,28 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        purchase.refresh_from_db()
+        sale.refresh_from_db()
         self.product.refresh_from_db()
 
         self.assertEqual(
-            purchase.status,
-            Purchase.Status.CANCELLED,
+            sale.status,
+            Sale.Status.CANCELLED,
         )
+
         self.assertEqual(
             self.product.stock_quantity,
             Decimal("10.00"),
         )
-        self.assertEqual(
-            StockMovement.objects.count(),
-            0,
+
+    def test_cancelled_sale_cannot_be_completed(self):
+        sale = self.create_sale()
+
+        self.client.post(
+            self.cancel_url(sale),
         )
 
-    def test_cancelled_purchase_cannot_be_completed(self):
-        purchase = self.create_purchase()
-
-        self.client.post(self.cancel_url(purchase))
-
         response = self.client.post(
-            self.complete_url(purchase),
+            self.complete_url(sale),
         )
 
         self.assertEqual(
@@ -363,13 +442,15 @@ class PurchaseAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_completed_purchase_cannot_be_cancelled(self):
-        purchase = self.create_purchase()
+    def test_completed_sale_cannot_be_cancelled(self):
+        sale = self.create_sale()
 
-        self.client.post(self.complete_url(purchase))
+        self.client.post(
+            self.complete_url(sale),
+        )
 
         response = self.client.post(
-            self.cancel_url(purchase),
+            self.cancel_url(sale),
         )
 
         self.assertEqual(
