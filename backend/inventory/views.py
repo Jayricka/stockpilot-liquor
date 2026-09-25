@@ -4,6 +4,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from billing.permissions import HasOperationalAccess
 from businesses.models import Business
 
 from .models import Purchase
@@ -12,7 +13,10 @@ from .services import PurchaseService
 
 
 class BusinessAccessMixin:
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_business(self):
         return get_object_or_404(
@@ -82,7 +86,6 @@ class PurchaseListCreateView(
                 validated_data=validated_data,
                 items_data=items_data,
             )
-
         except ValueError as error:
             return Response(
                 {"detail": str(error)},
@@ -130,7 +133,6 @@ class CompletePurchaseView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
     serializer_class = PurchaseSerializer
 
     def post(self, request, business_id, pk):
@@ -147,7 +149,6 @@ class CompletePurchaseView(
                 purchase_id=purchase.id,
                 user=request.user,
             )
-
         except ValueError as error:
             return Response(
                 {"detail": str(error)},
@@ -168,7 +169,6 @@ class CancelPurchaseView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
     serializer_class = PurchaseSerializer
 
     def post(self, request, business_id, pk):
@@ -184,7 +184,6 @@ class CancelPurchaseView(
             purchase = PurchaseService.cancel_purchase(
                 purchase_id=purchase.id,
             )
-
         except ValueError as error:
             return Response(
                 {"detail": str(error)},
