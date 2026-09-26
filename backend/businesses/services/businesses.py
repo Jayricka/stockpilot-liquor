@@ -5,7 +5,7 @@ from billing.services.subscriptions import (
 )
 from products.services import ProductService
 
-from .models import Business, BusinessMembership
+from ..models import Business, BusinessMembership
 
 
 class BusinessService:

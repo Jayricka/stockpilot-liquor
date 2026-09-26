@@ -72,3 +72,18 @@ class BusinessMemberSerializer(serializers.ModelSerializer):
             "email",
             "role",
         ]
+
+
+class AddBusinessMemberSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    role = serializers.ChoiceField(
+        choices=BusinessMembership.Role.choices,
+    )
+
+
+class ChangeBusinessMemberRoleSerializer(
+    serializers.Serializer
+):
+    role = serializers.ChoiceField(
+        choices=BusinessMembership.Role.choices,
+    )

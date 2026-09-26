@@ -1,0 +1,84 @@
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from accounts.models import User
+from businesses.models import Business, BusinessMembership
+from suppliers.models import Supplier
+
+
+class SupplierAPITestBase(APITestCase):
+
+    def setUp(self):
+            self.owner = User.objects.create_user(
+                email="owner@test.com",
+                password="TestPassword123!",
+                first_name="Test",
+                last_name="Owner",
+            )
+
+            self.other_user = User.objects.create_user(
+                email="other@test.com",
+                password="TestPassword123!",
+                first_name="Other",
+                last_name="User",
+            )
+
+            self.business = Business.objects.create(
+                name="Test Liquor Store",
+                business_type="liquor_store",
+                phone="0712345678",
+            )
+
+            self.other_business = Business.objects.create(
+                name="Other Liquor Store",
+                business_type="liquor_store",
+                phone="0798765432",
+            )
+
+            BusinessMembership.objects.create(
+                user=self.owner,
+                business=self.business,
+                role=BusinessMembership.Role.OWNER,
+                is_active=True,
+            )
+
+            BusinessMembership.objects.create(
+                user=self.other_user,
+                business=self.other_business,
+                role=BusinessMembership.Role.OWNER,
+                is_active=True,
+            )
+
+            self.supplier = Supplier.objects.create(
+                business=self.business,
+                name="Kenya Drinks Distributors",
+                phone="0711223344",
+                email="supplier@test.com",
+                address="Nairobi",
+                notes="Main drinks supplier",
+            )
+
+            self.other_supplier = Supplier.objects.create(
+                business=self.other_business,
+                name="Other Drinks Supplier",
+                phone="0700000000",
+                email="other@supplier.com",
+                address="Nairobi",
+                notes="Other business supplier",
+            )
+
+            self.list_url = reverse(
+                "supplier-list-create",
+                kwargs={"business_id": self.business.id},
+            )
+
+            self.detail_url = reverse(
+                "supplier-detail",
+                kwargs={
+                    "business_id": self.business.id,
+                    "pk": self.supplier.id,
+                },
+            )
+
+    def authenticate(self):
+            self.client.force_authenticate(user=self.owner)

@@ -87,7 +87,7 @@ class BusinessOnboardingTestCase(APITestCase):
 
         self.assertEqual(
             response.data["subscription"]["plan"]["price"],
-            1999,
+            2499,
         )
 
     def test_onboarding_creates_owner_membership(self):

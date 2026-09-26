@@ -3,7 +3,9 @@ from rest_framework import serializers
 from billing.models import Plan
 
 from .models import Business
-from .services import BusinessOnboardingService
+from .services.businesses import (
+    BusinessOnboardingService,
+)
 
 
 class BusinessOnboardingSerializer(

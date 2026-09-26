@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -47,6 +46,49 @@ class Plan(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.currency} {self.price}"
+
+
+class PlanEntitlement(models.Model):
+    class ValueType(models.TextChoices):
+        BOOLEAN = "BOOLEAN", "Boolean"
+        INTEGER = "INTEGER", "Integer"
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.CASCADE,
+        related_name="entitlements",
+    )
+
+    feature = models.CharField(
+        max_length=100,
+    )
+
+    value_type = models.CharField(
+        max_length=20,
+        choices=ValueType.choices,
+    )
+
+    boolean_value = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    integer_value = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["plan", "feature"],
+                name="unique_plan_entitlement",
+            ),
+        ]
+        ordering = ["feature"]
+
+    def __str__(self):
+        return f"{self.plan.code} - {self.feature}"
 
 
 class Subscription(models.Model):
