@@ -63,6 +63,13 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('stockpilot-refresh')
     localStorage.removeItem('stockpilot-user')
 
+    sessionStorage.removeItem(
+      'stockpilot-business',
+    )
+    sessionStorage.removeItem(
+      'stockpilot-subscription',
+    )
+
     setAccessToken(null)
     setUser(null)
   }

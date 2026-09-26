@@ -339,3 +339,28 @@
     padding-top: 23px;
   }
 }
+
+.topbar-subscription {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-right: 2px;
+}
+
+.topbar-subscription strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.topbar-subscription span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 720px) {
+  .topbar-subscription {
+    display: none;
+  }
+}

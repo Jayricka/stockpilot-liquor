@@ -21,7 +21,7 @@ import {
   updateProduct,
 } from '../../services/products'
 
-import { useBusiness } from '../../context/BusinessContext'
+import { getBusinesses } from '../../services/dashboard'
 
 const CATALOG_GROUPS = [
   {
@@ -126,16 +126,8 @@ function normalizeList(data) {
 }
 
 function Products() {
-  const {
-    businesses,
-    businessId: currentBusinessId,
-    selectBusiness,
-    loading: businessLoading,
-  } = useBusiness()
-
-  const businessId = currentBusinessId
-    ? String(currentBusinessId)
-    : ''
+  const [businesses, setBusinesses] = useState([])
+  const [businessId, setBusinessId] = useState('')
 
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -157,6 +149,21 @@ function Products() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] =
     useState(null)
+
+  const loadBusinesses = useCallback(async () => {
+    try {
+      const data = await getBusinesses()
+      const list = normalizeList(data)
+
+      setBusinesses(list)
+
+      if (list.length && !businessId) {
+        setBusinessId(String(list[0].id))
+      }
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }, [businessId])
 
   const loadWorkspaceData = useCallback(
     async (selectedBusinessId) => {
@@ -191,6 +198,10 @@ function Products() {
     },
     [],
   )
+
+  useEffect(() => {
+    loadBusinesses()
+  }, [loadBusinesses])
 
   useEffect(() => {
     loadWorkspaceData(businessId)
@@ -342,7 +353,7 @@ function Products() {
   }
 
   function handleBusinessChange(value) {
-    selectBusiness(Number(value))
+    setBusinessId(value)
     resetFilters()
     setFormOpen(false)
     setEditingProduct(null)
@@ -403,10 +414,7 @@ function Products() {
     }
   }
 
-  if (
-    businessLoading ||
-    (loading && !businessId)
-  ) {
+  if (loading && !businessId) {
     return <ProductLoading />
   }
 

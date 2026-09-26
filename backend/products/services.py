@@ -3,7 +3,64 @@ from django.db import transaction
 from .models import Category, Product
 
 
+DEFAULT_CATEGORIES = {
+    Category.Group.ALCOHOLIC_DRINKS: [
+        "Gin",
+        "Vodka",
+        "Whisky",
+        "Brandy",
+        "Rum",
+        "Tequila",
+        "Wine",
+        "Beer",
+        "Cider",
+        "Champagne",
+        "Liqueurs",
+        "Cocktails / RTD",
+    ],
+    Category.Group.SODA_AND_DRINKS: [
+        "Soda",
+        "Energy Drinks",
+        "Juice",
+        "Water",
+        "Tonic & Mixers",
+        "Sports Drinks",
+        "Iced Tea",
+    ],
+    Category.Group.CIGARETTES_AND_TOBACCO: [
+        "Cigarettes",
+        "Cigars",
+        "Rolling Tobacco",
+        "Shisha Tobacco",
+        "Matches & Lighters",
+    ],
+    Category.Group.OTHER: [
+        "Snacks",
+        "Ice",
+        "Glassware",
+        "Bar Accessories",
+        "Other",
+    ],
+}
+
+
 class ProductService:
+
+    @staticmethod
+    @transaction.atomic
+    def create_default_categories(business):
+        categories = []
+
+        for group, names in DEFAULT_CATEGORIES.items():
+            for name in names:
+                category, _ = Category.objects.get_or_create(
+                    business=business,
+                    name=name,
+                    defaults={"group": group},
+                )
+                categories.append(category)
+
+        return categories
 
     @staticmethod
     @transaction.atomic

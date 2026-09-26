@@ -1,94 +1,79 @@
 import {
   AlertTriangle,
-  Boxes,
-  CircleCheck,
-  Wallet,
+  CheckCircle2,
+  Package,
+  XCircle,
 } from 'lucide-react'
 
 function ProductStats({ products = [] }) {
   const total = products.length
 
   const active = products.filter(
-    (product) => product.is_active,
+    (product) => Boolean(product.is_active),
   ).length
 
   const lowStock = products.filter(
-    (product) => product.is_low_stock,
+    (product) => Boolean(product.is_low_stock),
   ).length
 
-  const inventoryValue = products.reduce(
-    (totalValue, product) =>
-      totalValue +
-      Number(product.buying_price || 0) *
-        Number(product.stock_quantity || 0),
-    0,
-  )
-
-  const formatCurrency = (value) =>
-    new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      maximumFractionDigits: 0,
-    }).format(value)
+  const outOfStock = products.filter(
+    (product) => Number(product.stock_quantity || 0) <= 0,
+  ).length
 
   const stats = [
     {
-      label: 'Total products',
+      label: 'Total Products',
       value: total,
-      icon: Boxes,
-      detail: 'Across your catalog',
-      tone: 'neutral',
+      detail: 'Products in catalog',
+      icon: Package,
     },
     {
-      label: 'Active products',
+      label: 'Active',
       value: active,
-      icon: CircleCheck,
-      detail: `${total ? Math.round((active / total) * 100) : 0}% of catalog`,
-      tone: 'success',
+      detail: 'Currently available',
+      icon: CheckCircle2,
     },
     {
-      label: 'Low stock',
+      label: 'Low Stock',
       value: lowStock,
+      detail: 'Need attention',
       icon: AlertTriangle,
-      detail: lowStock ? 'Needs attention' : 'Stock looks healthy',
-      tone: lowStock ? 'warning' : 'success',
     },
     {
-      label: 'Inventory value',
-      value: formatCurrency(inventoryValue),
-      icon: Wallet,
-      detail: 'Based on buying price',
-      tone: 'primary',
+      label: 'Out of Stock',
+      value: outOfStock,
+      detail: 'Currently unavailable',
+      icon: XCircle,
     },
   ]
 
   return (
-    <section className="sp-product-stats">
+    <section className="product-stats">
       {stats.map((stat) => {
         const Icon = stat.icon
 
         return (
           <article
-            className={`sp-stat-card sp-stat-${stat.tone}`}
             key={stat.label}
+            className="product-stat-card"
           >
-            <div className="sp-stat-top">
-              <div className="sp-stat-icon">
+            <div className="product-stat-top">
+              <div className="product-stat-icon">
                 <Icon size={18} />
               </div>
 
-              <span className="sp-stat-label">
+              <span className="product-stat-label">
                 {stat.label}
               </span>
             </div>
 
-            <div className="sp-stat-value">
+            <div className="product-stat-value">
               {stat.value}
             </div>
 
-            <div className="sp-stat-detail">
+            <p className="product-stat-detail">
               {stat.detail}
-            </div>
+            </p>
           </article>
         )
       })}

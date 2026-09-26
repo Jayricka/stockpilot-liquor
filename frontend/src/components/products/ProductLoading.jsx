@@ -1,40 +1,41 @@
 function ProductLoading() {
   return (
-    <section className="sp-product-loading">
-      <div className="sp-loading-header">
-        <div className="sp-skeleton sp-skeleton-title" />
-        <div className="sp-skeleton sp-skeleton-button" />
+    <div className="product-loading" aria-label="Loading products">
+      <div className="product-loading-header">
+        <div className="product-skeleton product-skeleton-title" />
+        <div className="product-skeleton product-skeleton-button" />
       </div>
 
-      <div className="sp-loading-stats">
+      <div className="product-loading-stats">
         {[1, 2, 3, 4].map((item) => (
           <div
-            className="sp-skeleton-card"
             key={item}
+            className="product-skeleton-card"
           >
-            <div className="sp-skeleton sp-skeleton-icon" />
-            <div className="sp-skeleton sp-skeleton-line large" />
-            <div className="sp-skeleton sp-skeleton-line" />
+            <div className="product-skeleton product-skeleton-icon" />
+            <div className="product-skeleton product-skeleton-label" />
+            <div className="product-skeleton product-skeleton-value" />
           </div>
         ))}
       </div>
 
-      <div className="sp-loading-table">
-        <div className="sp-skeleton sp-skeleton-line large" />
+      <div className="product-loading-table">
+        <div className="product-skeleton product-skeleton-table-header" />
 
         {[1, 2, 3, 4, 5].map((item) => (
           <div
-            className="sp-loading-row"
             key={item}
+            className="product-skeleton-row"
           >
-            <div className="sp-skeleton sp-skeleton-avatar" />
-            <div className="sp-skeleton sp-skeleton-line large" />
-            <div className="sp-skeleton sp-skeleton-line" />
-            <div className="sp-skeleton sp-skeleton-line" />
+            <div className="product-skeleton" />
+            <div className="product-skeleton" />
+            <div className="product-skeleton" />
+            <div className="product-skeleton" />
+            <div className="product-skeleton" />
           </div>
         ))}
       </div>
-    </section>
+    </div>
   )
 }
 

@@ -1,5 +1,14 @@
 import api from './api'
 
+export async function registerUser(userData) {
+  const response = await api.post(
+    'auth/register/',
+    userData,
+  )
+
+  return response.data
+}
+
 export async function loginUser(email, password) {
   const response = await api.post('auth/login/', {
     email,
@@ -16,9 +25,12 @@ export async function getCurrentUser() {
 }
 
 export async function refreshToken(refresh) {
-  const response = await api.post('auth/token/refresh/', {
-    refresh,
-  })
+  const response = await api.post(
+    'auth/token/refresh/',
+    {
+      refresh,
+    },
+  )
 
   return response.data
 }
