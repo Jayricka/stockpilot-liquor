@@ -1,9 +1,9 @@
-.product-table {
+.dashboard-product-table {
   overflow-x: auto;
 }
 
-.product-table-head,
-.product-table-row {
+.dashboard-product-table-head,
+.dashboard-product-table-row {
   display: grid;
   grid-template-columns: 1fr 140px 160px;
   gap: 20px;
@@ -11,7 +11,7 @@
   padding: 13px 0;
 }
 
-.product-table-head {
+.dashboard-product-table-head {
   border-bottom: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.76rem;
@@ -19,22 +19,22 @@
   text-transform: uppercase;
 }
 
-.product-table-row {
+.dashboard-product-table-row {
   border-bottom: 1px solid var(--border);
   color: var(--text);
   font-size: 0.88rem;
 }
 
-.product-table-row:last-child {
+.dashboard-product-table-row:last-child {
   border-bottom: 0;
 }
 
-.product-table-row span:last-child,
-.product-table-head span:last-child {
+.dashboard-product-table-row span:last-child,
+.dashboard-product-table-head span:last-child {
   text-align: right;
 }
 
-.product-table-row span:nth-child(2),
-.product-table-head span:nth-child(2) {
+.dashboard-product-table-row span:nth-child(2),
+.dashboard-product-table-head span:nth-child(2) {
   text-align: center;
 }

@@ -48,7 +48,7 @@ function Navbar() {
             FAQ
           </a>
 
-          <a className="nav-login" href="#contact" onClick={closeMenu}>
+          <a className="nav-login" href="/demo" onClick={closeMenu}>
             Request a demo
           </a>
 

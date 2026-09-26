@@ -13,6 +13,7 @@ import LowStock from '../../components/dashboard/LowStock'
 import RecentSales from '../../components/dashboard/RecentSales'
 import BusinessSnapshot from '../../components/dashboard/BusinessSnapshot'
 import TopProducts from '../../components/dashboard/TopProducts'
+import SubscriptionBanner from '../../components/dashboard/SubscriptionBanner'
 
 function Dashboard() {
   const [businesses, setBusinesses] = useState([])
@@ -92,6 +93,8 @@ function Dashboard() {
 
   return (
     <section className="dashboard-page">
+      <SubscriptionBanner />
+
       <DashboardHeader
         businesses={businesses}
         businessId={businessId}
@@ -105,18 +108,15 @@ function Dashboard() {
           value={summary.today_revenue}
           type="currency"
         />
-
         <MetricCard
           label="Gross profit"
           value={summary.today_gross_profit}
           type="currency"
         />
-
         <MetricCard
           label="Today's sales"
           value={summary.today_sales_count}
         />
-
         <MetricCard
           label="Stock value"
           value={summary.total_stock_value}
@@ -128,7 +128,6 @@ function Dashboard() {
         <PaymentMethods
           payments={dashboard.sales_by_payment_method}
         />
-
         <LowStock
           products={dashboard.low_stock_products}
         />
@@ -138,7 +137,6 @@ function Dashboard() {
         <RecentSales
           sales={dashboard.recent_sales}
         />
-
         <BusinessSnapshot
           summary={summary}
           purchases={dashboard.recent_purchases}

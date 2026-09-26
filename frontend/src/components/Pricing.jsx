@@ -21,7 +21,7 @@ const plans = [
       '1 staff member',
     ],
     action: 'Start Free',
-    href: '/login',
+    href: '/register?plan=starter',
   },
   {
     name: 'Growth',
@@ -40,7 +40,7 @@ const plans = [
       'Priority support',
     ],
     action: 'Start Free',
-    href: '/login',
+    href: '/register?plan=growth',
     popular: true,
   },
   {
@@ -59,7 +59,7 @@ const plans = [
       'Custom requirements discussion',
     ],
     action: 'Talk to Us',
-    href: '#contact',
+    href: '/register?plan=business',
   },
 ]
 
@@ -166,7 +166,7 @@ function Pricing() {
 
         <a
           className="pricing-demo-link"
-          href="#contact"
+          href="/demo"
         >
           See how StockPilot works
           <ArrowRight size={15} />

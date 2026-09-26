@@ -17,8 +17,6 @@
 @import './styles/inventory-table.css';
 
 @import './styles/products.css';
-@import './styles/products-filters.css';
-@import './styles/products-table.css';
 
 @import './styles/sales.css';
 @import './styles/suppliers.css';
@@ -28,3 +26,4 @@
 @import './styles/purchases.css';
 
 @import './styles/settings.css';
+@import './styles/demo.css';

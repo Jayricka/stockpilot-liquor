@@ -8,8 +8,8 @@ function TopProducts({ products = [] }) {
         </div>
       </div>
 
-      <div className="product-table">
-        <div className="product-table-head">
+      <div className="dashboard-product-table">
+        <div className="dashboard-product-table-head">
           <span>Product</span>
           <span>Units sold</span>
           <span>Revenue</span>
@@ -18,7 +18,7 @@ function TopProducts({ products = [] }) {
         {products.length ? (
           products.map((product) => (
             <div
-              className="product-table-row"
+              className="dashboard-product-table-row"
               key={product.items__product_id}
             >
               <strong>{product.items__product__name}</strong>

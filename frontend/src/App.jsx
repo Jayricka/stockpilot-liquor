@@ -17,7 +17,12 @@ import ContactCTA from './components/ContactCTA'
 import Footer from './components/Footer'
 
 import AppLayout from './components/layout/AppLayout'
+
 import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
+import BusinessOnboarding from './pages/onboarding/BusinessOnboarding'
+import Demo from './pages/demo/Demo'
+
 import Dashboard from './pages/dashboard/Dashboard'
 import Inventory from './pages/inventory/Inventory'
 import Products from './pages/products/Products'
@@ -51,16 +56,41 @@ function LandingPage() {
 function App() {
   return (
     <Routes>
+      {/* Public marketing */}
       <Route
         path="/"
         element={<LandingPage />}
       />
 
+      {/* Authentication */}
       <Route
         path="/login"
         element={<Login />}
       />
 
+      <Route
+        path="/register"
+        element={<Register />}
+      />
+
+      {/* Business onboarding */}
+      <Route
+        path="/onboarding"
+        element={<BusinessOnboarding />}
+      />
+
+      {/* Anonymous demo */}
+      <Route
+        path="/demo"
+        element={<Demo />}
+      />
+
+      <Route
+        path="/demo/:token"
+        element={<Demo />}
+      />
+
+      {/* Authenticated application */}
       <Route element={<AppLayout />}>
         <Route
           path="/dashboard"
@@ -108,6 +138,7 @@ function App() {
         />
       </Route>
 
+      {/* Fallback */}
       <Route
         path="*"
         element={

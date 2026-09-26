@@ -42,7 +42,7 @@ function SelectFilter({
       onChange={(event) =>
         onChange(event.target.value)
       }
-      className="h-10 min-w-[145px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:focus:border-slate-500 dark:focus:ring-slate-700"
+      className="h-10 min-w-[145px] rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-transparent dark:hover:border-slate-600 dark:focus:border-slate-500 dark:focus:ring-slate-700"
     >
       <option value="">
         {placeholder}
@@ -120,14 +120,12 @@ function ProductFilters({
                   role="tab"
                   aria-selected={isActive}
                   onClick={() =>
-                    onCatalogChange(
-                      item.value,
-                    )
+                    onCatalogChange(item.value)
                   }
                   className={`group relative flex h-12 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition ${
                     isActive
-                      ? 'border-slate-950 text-slate-950 dark:border-slate-200 dark:text-slate-100'
-                      : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200'
+                      ? 'border-slate-950 text-slate-950'
+                      : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'
                   }`}
                 >
                   <span>{item.label}</span>
@@ -135,8 +133,8 @@ function ProductFilters({
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
                       isActive
-                        ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                        : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 dark:bg-slate-900 dark:text-slate-500 dark:group-hover:bg-slate-800 dark:group-hover:text-slate-300'
+                        ? 'bg-slate-100 text-slate-700'
+                        : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600'
                     }`}
                   >
                     {count}
@@ -149,7 +147,7 @@ function ProductFilters({
       </div>
 
       {/* FILTER BAR */}
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mt-4 rounded-xl border border-slate-200 bg-transparent p-3 shadow-sm dark:border-slate-700 dark:bg-transparent">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           {/* Search */}
           <div className="relative min-w-0 flex-1">
@@ -167,7 +165,7 @@ function ProductFilters({
                 )
               }
               placeholder="Search products, brands or SKU..."
-              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-9 pr-9 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-slate-500 dark:focus:bg-slate-800 dark:focus:ring-slate-700"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-transparent pl-9 pr-9 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-400 focus:bg-transparent focus:ring-2 focus:ring-slate-100 dark:border-slate-700 dark:bg-transparent dark:hover:border-slate-600 dark:focus:border-slate-500 dark:focus:bg-transparent dark:focus:ring-slate-700"
             />
 
             {search && (
@@ -177,7 +175,7 @@ function ProductFilters({
                   onSearchChange('')
                 }
                 aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
                 <X size={15} />
               </button>
@@ -188,6 +186,7 @@ function ProductFilters({
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 text-slate-400">
               <SlidersHorizontal size={14} />
+
               <span className="hidden text-xs font-medium sm:inline">
                 Filter
               </span>
@@ -242,7 +241,7 @@ function ProductFilters({
               <button
                 type="button"
                 onClick={onClear}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 <X size={15} />
                 Clear
@@ -257,18 +256,18 @@ function ProductFilters({
             {hasFilters ? (
               <>
                 Showing{' '}
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <span className="font-semibold text-slate-700">
                   {resultCount}
                 </span>{' '}
                 of{' '}
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <span className="font-semibold text-slate-700">
                   {totalCount}
                 </span>{' '}
                 products
               </>
             ) : (
               <>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <span className="font-semibold text-slate-700">
                   {totalCount}
                 </span>{' '}
                 {totalCount === 1

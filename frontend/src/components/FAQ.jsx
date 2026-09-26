@@ -17,9 +17,9 @@ const questions = [
       'M-Pesa is supported as a payment method in the current backend. Direct M-Pesa API integration is planned for a later phase.',
   },
   {
-    question: 'Is pricing confirmed?',
+    question: 'Can I try StockPilot before signing up?',
     answer:
-      'Not yet. Pricing will be confirmed after pilot feedback and customer discovery.',
+      'Yes. You can explore the interactive demo without creating an account. Demo data is isolated from real business workspaces.',
   },
 ]
 

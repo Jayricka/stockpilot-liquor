@@ -30,7 +30,7 @@ function Hero() {
         </p>
 
         <div className="hero-actions">
-          <a className="button button-primary" href="#contact">
+          <a className="button button-primary" href="#/demo">
             Get started
             <ArrowRight size={17} />
           </a>

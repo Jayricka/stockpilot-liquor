@@ -3,6 +3,7 @@ from django.db import transaction
 from billing.services.subscriptions import (
     SubscriptionService,
 )
+from products.services import ProductService
 
 from .models import Business, BusinessMembership
 
@@ -55,6 +56,10 @@ class BusinessOnboardingService:
         business = BusinessService.create_business(
             user=user,
             validated_data=validated_data,
+        )
+
+        ProductService.create_default_categories(
+            business
         )
 
         subscription = SubscriptionService.create_trial(
