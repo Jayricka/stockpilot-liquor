@@ -2,6 +2,8 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+
+from billing.permissions import HasOperationalAccess
 from rest_framework.response import Response
 
 from businesses.models import Business
@@ -11,7 +13,10 @@ from .services import DashboardService
 
 
 class DashboardView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
     serializer_class = DashboardSerializer
 
     def get_business(self):

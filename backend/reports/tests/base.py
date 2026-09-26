@@ -7,6 +7,8 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User
 from businesses.models import Business, BusinessMembership
+from billing.models import Plan
+from billing.services.subscriptions import SubscriptionService
 from deliveries.models import DeliveryOrder
 from inventory.models import Purchase, PurchaseItem
 from products.models import Category, Product
@@ -53,6 +55,16 @@ class DashboardAPITestBase(APITestCase):
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
             is_active=True,
+        )
+
+        SubscriptionService.create_trial(
+            self.business,
+            Plan.objects.get(code=Plan.Code.STARTER),
+        )
+
+        SubscriptionService.create_trial(
+            self.other_business,
+            Plan.objects.get(code=Plan.Code.STARTER),
         )
 
         self.category = Category.objects.create(

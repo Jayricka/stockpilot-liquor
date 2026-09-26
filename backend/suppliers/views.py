@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
+
+from billing.permissions import HasOperationalAccess
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
@@ -12,7 +14,10 @@ from .services import SupplierService
 
 
 class BusinessAccessMixin:
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+    ]
 
     def get_business(self):
         return get_object_or_404(

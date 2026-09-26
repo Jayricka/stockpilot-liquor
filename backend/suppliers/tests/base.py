@@ -3,6 +3,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from accounts.models import User
 from businesses.models import Business, BusinessMembership
+from billing.models import Plan
+from billing.services.subscriptions import SubscriptionService
 from suppliers.models import Supplier
 
 
@@ -47,6 +49,16 @@ class SupplierAPITestBase(APITestCase):
                 business=self.other_business,
                 role=BusinessMembership.Role.OWNER,
                 is_active=True,
+            )
+
+            SubscriptionService.create_trial(
+                self.business,
+                Plan.objects.get(code=Plan.Code.STARTER),
+            )
+
+            SubscriptionService.create_trial(
+                self.other_business,
+                Plan.objects.get(code=Plan.Code.STARTER),
             )
 
             self.supplier = Supplier.objects.create(
