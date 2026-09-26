@@ -32,7 +32,7 @@ class BillingModelTestCase(TestCase):
         )
         self.assertEqual(
             self.plan.price,
-            999,
+            1499,
         )
         self.assertEqual(
             self.plan.currency,
@@ -108,7 +108,7 @@ class BillingModelTestCase(TestCase):
         )
         self.assertEqual(
             payment.amount,
-            999,
+            1499,
         )
         self.assertEqual(
             payment.currency,
