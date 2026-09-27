@@ -37,23 +37,52 @@ function getStoredSubscription() {
 }
 
 export function BusinessProvider({ children }) {
-  const { isAuthenticated } = useAuth()
-
-  const [businesses, setBusinesses] = useState([])
-  const [business, setBusiness] = useState(null)
-  const [subscription, setSubscription] = useState(
-    getStoredSubscription,
-  )
-  const [loading, setLoading] = useState(
+  const {
     isAuthenticated,
-  )
+    user,
+  } = useAuth()
+
+  const [businesses, setBusinesses] =
+    useState([])
+
+  const [business, setBusiness] =
+    useState(null)
+
+  const [subscription, setSubscription] =
+    useState(getStoredSubscription)
+
+  const [loadedUserKey, setLoadedUserKey] =
+    useState('')
+
+  const [loading, setLoading] =
+    useState(isAuthenticated)
+
+  const userKey = isAuthenticated
+    ? String(user?.id || user?.email || '')
+    : ''
 
   useEffect(() => {
     if (!isAuthenticated) {
+      sessionStorage.removeItem(
+        'stockpilot-business',
+      )
+
+      sessionStorage.removeItem(
+        'stockpilot-subscription',
+      )
+
       return undefined
     }
 
     let mounted = true
+
+    sessionStorage.removeItem(
+      'stockpilot-business',
+    )
+
+    sessionStorage.removeItem(
+      'stockpilot-subscription',
+    )
 
     async function loadBusinesses() {
       try {
@@ -63,7 +92,8 @@ export function BusinessProvider({ children }) {
           'stockpilot-business',
         )
 
-        const businessData = await getBusinesses()
+        const businessData =
+          await getBusinesses()
 
         if (!mounted) {
           return
@@ -82,6 +112,8 @@ export function BusinessProvider({ children }) {
             JSON.stringify(currentBusiness),
           )
         }
+
+        setLoadedUserKey(userKey)
       } catch {
         if (!mounted) {
           return
@@ -89,6 +121,7 @@ export function BusinessProvider({ children }) {
 
         setBusinesses([])
         setBusiness(null)
+        setLoadedUserKey('')
 
         sessionStorage.removeItem(
           'stockpilot-business',
@@ -132,13 +165,18 @@ export function BusinessProvider({ children }) {
     return () => {
       mounted = false
     }
-  }, [isAuthenticated])
+  }, [
+    isAuthenticated,
+    userKey,
+  ])
 
   const selectBusiness = useCallback(
     (businessId) => {
       const selectedBusiness =
         businesses.find(
-          (item) => Number(item.id) === Number(businessId),
+          (item) =>
+            Number(item.id) ===
+            Number(businessId),
         ) || null
 
       setBusiness(selectedBusiness)
@@ -157,6 +195,33 @@ export function BusinessProvider({ children }) {
     [businesses],
   )
 
+  const updateBusiness = useCallback(
+    (updatedBusiness) => {
+      setBusinesses((current) =>
+        current.map((item) =>
+          Number(item.id) ===
+          Number(updatedBusiness.id)
+            ? updatedBusiness
+            : item,
+        ),
+      )
+
+      setBusiness((current) =>
+        current &&
+        Number(current.id) ===
+          Number(updatedBusiness.id)
+          ? updatedBusiness
+          : current,
+      )
+
+      sessionStorage.setItem(
+        'stockpilot-business',
+        JSON.stringify(updatedBusiness),
+      )
+    },
+    [],
+  )
+
   const plan = subscription?.plan || null
 
   const isTrialing =
@@ -170,47 +235,52 @@ export function BusinessProvider({ children }) {
   const trialDaysRemaining =
     subscription?.trial_days_remaining || 0
 
+  const userDataReady =
+    isAuthenticated &&
+    loadedUserKey === userKey
+
   const value = useMemo(
     () => ({
-      businesses: isAuthenticated
+      businesses: userDataReady
         ? businesses
         : [],
 
-      business: isAuthenticated
+      business: userDataReady
         ? business
         : null,
 
-      businessId: isAuthenticated
+      businessId: userDataReady
         ? business?.id || null
         : null,
 
-      subscription: isAuthenticated
+      subscription: userDataReady
         ? subscription
         : null,
 
-      plan: isAuthenticated
+      plan: userDataReady
         ? plan
         : null,
 
-      isTrialing: isAuthenticated
+      isTrialing: userDataReady
         ? isTrialing
         : false,
 
       isSubscriptionActive:
-        isAuthenticated
+        userDataReady
           ? isSubscriptionActive
           : false,
 
       trialDaysRemaining:
-        isAuthenticated
+        userDataReady
           ? trialDaysRemaining
           : 0,
 
       loading: isAuthenticated
-        ? loading
+        ? loading || !userDataReady
         : false,
 
       selectBusiness,
+      updateBusiness,
     }),
     [
       isAuthenticated,
@@ -222,7 +292,9 @@ export function BusinessProvider({ children }) {
       isSubscriptionActive,
       trialDaysRemaining,
       loading,
+      userDataReady,
       selectBusiness,
+      updateBusiness,
     ],
   )
 

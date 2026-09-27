@@ -3,7 +3,7 @@ import {
   useState,
 } from 'react'
 
-import { getBusinesses } from '../../../services/dashboard'
+import { useBusiness } from '../../../context/BusinessContext'
 
 import {
   getBusiness,
@@ -24,16 +24,20 @@ export function useSettingsWorkspace({
   setError,
   setMessage,
 }) {
-  const [businesses, setBusinesses] =
-    useState([])
+  const {
+    businesses,
+    business,
+    businessId: contextBusinessId,
+    selectBusiness,
+    updateBusiness,
+    loading: businessLoading,
+  } = useBusiness()
 
-  const [businessId, setBusinessId] =
-    useState('')
+  const businessId = contextBusinessId
+    ? String(contextBusinessId)
+    : ''
 
   const [profile, setProfile] =
-    useState(null)
-
-  const [business, setBusiness] =
     useState(null)
 
   const [members, setMembers] =
@@ -46,51 +50,49 @@ export function useSettingsWorkspace({
     useState(true)
 
   useEffect(() => {
-    async function loadInitialData() {
+    let active = true
+
+    async function loadProfile() {
       try {
         setLoading(true)
         setError('')
 
-        const [
-          profileData,
-          businessData,
-        ] = await Promise.all([
-          getProfile(),
-          getBusinesses(),
-        ])
+        const profileData = await getProfile()
 
-        const availableBusinesses =
-          Array.isArray(businessData)
-            ? businessData
-            : businessData?.results || []
+        if (!active) {
+          return
+        }
 
         setProfile(profileData)
-        setBusinesses(availableBusinesses)
-
-        if (availableBusinesses.length) {
-          setBusinessId(
-            String(
-              availableBusinesses[0].id,
-            ),
-          )
-        }
       } catch (err) {
+        if (!active) {
+          return
+        }
+
         setError(
           err.response?.data?.detail ||
             'Unable to load settings.',
         )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
-    loadInitialData()
+    loadProfile()
+
+    return () => {
+      active = false
+    }
   }, [setError])
 
   useEffect(() => {
     if (!businessId) {
-      return
+      return undefined
     }
+
+    let active = true
 
     async function loadBusinessSettings() {
       try {
@@ -105,7 +107,9 @@ export function useSettingsWorkspace({
           getBusinessMembers(businessId),
         ])
 
-        setBusiness(businessData)
+        if (!active) {
+          return
+        }
 
         setBusinessForm({
           name: businessData.name || '',
@@ -120,7 +124,13 @@ export function useSettingsWorkspace({
         })
 
         setMembers(memberData)
+
+        updateBusiness(businessData)
       } catch (err) {
+        if (!active) {
+          return
+        }
+
         setError(
           err.response?.data?.detail ||
             'Unable to load business settings.',
@@ -129,15 +139,21 @@ export function useSettingsWorkspace({
     }
 
     loadBusinessSettings()
-  }, [businessId, setError, setMessage])
+
+    return () => {
+      active = false
+    }
+  }, [
+    businessId,
+    setError,
+    setMessage,
+    updateBusiness,
+  ])
 
   function handleBusinessSelect(event) {
-    const nextBusinessId =
-      event.target.value
-
-    setBusinessId(nextBusinessId)
-    setBusiness(null)
+    selectBusiness(event.target.value)
     setMembers([])
+    setBusinessForm(emptyBusiness)
     setMessage('')
   }
 
@@ -155,17 +171,17 @@ export function useSettingsWorkspace({
 
   return {
     businesses,
-    setBusinesses,
     businessId,
     profile,
     setProfile,
     business,
-    setBusiness,
     members,
     businessForm,
     setBusinessForm,
-    loading,
+    loading:
+      businessLoading || loading,
     handleBusinessSelect,
     handleBusinessChange,
+    updateBusiness,
   }
 }

@@ -26,6 +26,20 @@ function getStoredUser() {
   }
 }
 
+function clearSessionState() {
+  localStorage.removeItem('stockpilot-access')
+  localStorage.removeItem('stockpilot-refresh')
+  localStorage.removeItem('stockpilot-user')
+
+  sessionStorage.removeItem(
+    'stockpilot-business',
+  )
+
+  sessionStorage.removeItem(
+    'stockpilot-subscription',
+  )
+}
+
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(
     () => localStorage.getItem('stockpilot-access'),
@@ -34,6 +48,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(getStoredUser)
 
   function saveSession(tokens, userData = null) {
+    sessionStorage.removeItem(
+      'stockpilot-business',
+    )
+
+    sessionStorage.removeItem(
+      'stockpilot-subscription',
+    )
+
     localStorage.setItem(
       'stockpilot-access',
       tokens.access,
@@ -59,16 +81,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    localStorage.removeItem('stockpilot-access')
-    localStorage.removeItem('stockpilot-refresh')
-    localStorage.removeItem('stockpilot-user')
-
-    sessionStorage.removeItem(
-      'stockpilot-business',
-    )
-    sessionStorage.removeItem(
-      'stockpilot-subscription',
-    )
+    clearSessionState()
 
     setAccessToken(null)
     setUser(null)
