@@ -16,25 +16,6 @@ import { getCurrentSubscription } from '../services/billing'
 
 const BusinessContext = createContext(null)
 
-function getStoredBusiness() {
-  const storedBusiness = sessionStorage.getItem(
-    'stockpilot-business',
-  )
-
-  if (!storedBusiness) {
-    return null
-  }
-
-  try {
-    return JSON.parse(storedBusiness)
-  } catch {
-    sessionStorage.removeItem(
-      'stockpilot-business',
-    )
-    return null
-  }
-}
-
 function getStoredSubscription() {
   const storedSubscription =
     sessionStorage.getItem(
@@ -59,9 +40,7 @@ export function BusinessProvider({ children }) {
   const { isAuthenticated } = useAuth()
 
   const [businesses, setBusinesses] = useState([])
-  const [business, setBusiness] = useState(
-    getStoredBusiness,
-  )
+  const [business, setBusiness] = useState(null)
   const [subscription, setSubscription] = useState(
     getStoredSubscription,
   )
@@ -76,17 +55,15 @@ export function BusinessProvider({ children }) {
 
     let mounted = true
 
-    async function loadWorkspace() {
-      setLoading(true)
-
+    async function loadBusinesses() {
       try {
-        const [
-          businessData,
-          subscriptionData,
-        ] = await Promise.all([
-          getBusinesses(),
-          getCurrentSubscription(),
-        ])
+        setLoading(true)
+
+        sessionStorage.removeItem(
+          'stockpilot-business',
+        )
+
+        const businessData = await getBusinesses()
 
         if (!mounted) {
           return
@@ -94,17 +71,10 @@ export function BusinessProvider({ children }) {
 
         setBusinesses(businessData)
 
-        const storedBusiness =
-          getStoredBusiness()
-
         const currentBusiness =
-          businessData.find(
-            (item) =>
-              item.id === storedBusiness?.id,
-          ) || businessData[0] || null
+          businessData[0] || null
 
         setBusiness(currentBusiness)
-        setSubscription(subscriptionData)
 
         if (currentBusiness) {
           sessionStorage.setItem(
@@ -112,6 +82,34 @@ export function BusinessProvider({ children }) {
             JSON.stringify(currentBusiness),
           )
         }
+      } catch {
+        if (!mounted) {
+          return
+        }
+
+        setBusinesses([])
+        setBusiness(null)
+
+        sessionStorage.removeItem(
+          'stockpilot-business',
+        )
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    async function loadSubscription() {
+      try {
+        const subscriptionData =
+          await getCurrentSubscription()
+
+        if (!mounted) {
+          return
+        }
+
+        setSubscription(subscriptionData)
 
         sessionStorage.setItem(
           'stockpilot-subscription',
@@ -122,16 +120,14 @@ export function BusinessProvider({ children }) {
           return
         }
 
-        setBusiness(getStoredBusiness())
-        setSubscription(getStoredSubscription())
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        setSubscription(
+          getStoredSubscription(),
+        )
       }
     }
 
-    loadWorkspace()
+    loadBusinesses()
+    loadSubscription()
 
     return () => {
       mounted = false
@@ -151,6 +147,10 @@ export function BusinessProvider({ children }) {
         sessionStorage.setItem(
           'stockpilot-business',
           JSON.stringify(selectedBusiness),
+        )
+      } else {
+        sessionStorage.removeItem(
+          'stockpilot-business',
         )
       }
     },
@@ -175,32 +175,41 @@ export function BusinessProvider({ children }) {
       businesses: isAuthenticated
         ? businesses
         : [],
+
       business: isAuthenticated
         ? business
         : null,
+
       businessId: isAuthenticated
         ? business?.id || null
         : null,
+
       subscription: isAuthenticated
         ? subscription
         : null,
+
       plan: isAuthenticated
         ? plan
         : null,
+
       isTrialing: isAuthenticated
         ? isTrialing
         : false,
+
       isSubscriptionActive:
         isAuthenticated
           ? isSubscriptionActive
           : false,
+
       trialDaysRemaining:
         isAuthenticated
           ? trialDaysRemaining
           : 0,
+
       loading: isAuthenticated
         ? loading
         : false,
+
       selectBusiness,
     }),
     [
