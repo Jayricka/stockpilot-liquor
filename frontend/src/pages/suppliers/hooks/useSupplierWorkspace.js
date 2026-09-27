@@ -4,17 +4,18 @@ import {
   useState,
 } from 'react'
 
-import { getBusinesses } from '../../../services/dashboard'
+import { useBusiness } from '../../../context/BusinessContext'
 import { getSuppliers } from '../../../services/suppliers'
 
 export function useSupplierWorkspace({
   setError,
 }) {
-  const [businesses, setBusinesses] =
-    useState([])
-
-  const [businessId, setBusinessId] =
-    useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
 
   const [suppliers, setSuppliers] =
     useState([])
@@ -26,37 +27,13 @@ export function useSupplierWorkspace({
     useState(true)
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data =
-          await getBusinesses()
-
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(
-            String(data[0].id),
-          )
-        }
-      } catch (err) {
-        setError(
-          err.response?.data?.detail ||
-            'Failed to load businesses.',
-        )
-      }
+    if (!businessId) {
+      return undefined
     }
 
-    loadBusinesses()
-  }, [setError])
+    let active = true
 
-  useEffect(() => {
     async function loadSuppliers() {
-      if (!businessId) {
-        setSuppliers([])
-        setLoading(false)
-        return
-      }
-
       try {
         setLoading(true)
         setError('')
@@ -64,18 +41,34 @@ export function useSupplierWorkspace({
         const data =
           await getSuppliers(businessId)
 
+        if (!active) {
+          return
+        }
+
         setSuppliers(data)
       } catch (err) {
+        if (!active) {
+          return
+        }
+
+        setSuppliers([])
+
         setError(
           err.response?.data?.detail ||
             'Failed to load suppliers.',
         )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadSuppliers()
+
+    return () => {
+      active = false
+    }
   }, [businessId, setError])
 
   const filteredSuppliers =
@@ -108,7 +101,7 @@ export function useSupplierWorkspace({
     }, [suppliers, search])
 
   function handleBusinessChange(event) {
-    setBusinessId(event.target.value)
+    selectBusiness(event.target.value)
   }
 
   function handleSearchChange(event) {
@@ -121,7 +114,8 @@ export function useSupplierWorkspace({
     suppliers,
     setSuppliers,
     search,
-    loading,
+    loading:
+      businessLoading || loading,
     filteredSuppliers,
     handleBusinessChange,
     handleSearchChange,
