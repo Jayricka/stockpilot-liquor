@@ -4,17 +4,18 @@ import {
   useState,
 } from 'react'
 
-import { getBusinesses } from '../../../services/dashboard'
+import { useBusiness } from '../../../context/BusinessContext'
 import { getProducts } from '../../../services/products'
 import { getSuppliers } from '../../../services/suppliers'
 import { getPurchases } from '../../../services/purchases'
 
 export function usePurchaseWorkspace(status) {
-  const [businesses, setBusinesses] =
-    useState([])
-
-  const [businessId, setBusinessId] =
-    useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
 
   const [purchases, setPurchases] =
     useState([])
@@ -35,36 +36,10 @@ export function usePurchaseWorkspace(status) {
     useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data =
-          await getBusinesses()
+    let active = true
 
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(
-            String(data[0].id),
-          )
-        }
-      } catch (err) {
-        setError(
-          err.response?.data?.detail ||
-            'Failed to load businesses.',
-        )
-      }
-    }
-
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
     async function loadWorkspace() {
       if (!businessId) {
-        setPurchases([])
-        setSuppliers([])
-        setProducts([])
-        setLoading(false)
         return
       }
 
@@ -85,20 +60,34 @@ export function usePurchaseWorkspace(status) {
           getProducts(businessId),
         ])
 
+        if (!active) {
+          return
+        }
+
         setPurchases(purchaseData)
         setSuppliers(supplierData)
         setProducts(productData)
       } catch (err) {
+        if (!active) {
+          return
+        }
+
         setError(
           err.response?.data?.detail ||
             'Failed to load purchases.',
         )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadWorkspace()
+
+    return () => {
+      active = false
+    }
   }, [businessId, status])
 
   const filteredPurchases =
@@ -125,19 +114,23 @@ export function usePurchaseWorkspace(status) {
       )
     }, [purchases, search])
 
+  function handleBusinessChange(event) {
+    selectBusiness(event.target.value)
+  }
+
   return {
     businesses,
     businessId,
-    setBusinessId,
-    purchases,
-    setPurchases,
+    selectBusiness: handleBusinessChange,
     suppliers,
     products,
     search,
     setSearch,
-    loading,
+    loading:
+      businessLoading || loading,
     error,
     setError,
     filteredPurchases,
+    setPurchases,
   }
 }

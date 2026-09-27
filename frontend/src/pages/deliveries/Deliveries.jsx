@@ -12,7 +12,7 @@ function Deliveries() {
   const {
     businesses,
     businessId,
-    setBusinessId,
+    selectBusiness,
     setDeliveries,
     setSales,
     members,
@@ -60,11 +60,7 @@ function Deliveries() {
       <DeliveryHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={(event) =>
-          setBusinessId(
-            event.target.value,
-          )
-        }
+        onBusinessChange={selectBusiness}
         onAdd={openCreateModal}
       />
 
