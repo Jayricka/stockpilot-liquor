@@ -1,5 +1,6 @@
 
 import ProductFilters from '../../components/products/ProductFilters'
+import CategoryForm from '../../components/products/category/CategoryForm'
 import ProductForm from '../../components/products/ProductForm'
 import ProductHeader from '../../components/products/ProductHeader'
 import ProductLoading from '../../components/products/ProductLoading'
@@ -9,6 +10,7 @@ import ProductTable from '../../components/products/ProductTable'
 import { useProductWorkspace } from './hooks/useProductWorkspace'
 import { useProductFilters } from './hooks/useProductFilters'
 import { useProductForm } from './hooks/useProductForm'
+import { useCategoryForm } from './hooks/useCategoryForm'
 
 function Products() {
   const workspace = useProductWorkspace()
@@ -19,6 +21,12 @@ function Products() {
   )
 
   const form = useProductForm({
+    businessId: workspace.businessId,
+    loadWorkspaceData: workspace.loadWorkspaceData,
+    setError: workspace.setError,
+  })
+
+  const categoryForm = useCategoryForm({
     businessId: workspace.businessId,
     loadWorkspaceData: workspace.loadWorkspaceData,
     setError: workspace.setError,
@@ -100,6 +108,15 @@ function Products() {
             onAddProduct={form.openCreateForm}
           />
         </>
+      )}
+
+      {categoryForm.formOpen && (
+        <CategoryForm
+          loading={categoryForm.saving}
+          error={workspace.error}
+          onSubmit={categoryForm.handleSubmit}
+          onClose={categoryForm.closeForm}
+        />
       )}
 
       {form.formOpen && (
