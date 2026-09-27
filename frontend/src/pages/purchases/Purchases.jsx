@@ -20,7 +20,7 @@ function Purchases() {
   const {
     businesses,
     businessId,
-    setBusinessId,
+    selectBusiness,
     suppliers,
     products,
     search,
@@ -75,11 +75,7 @@ function Purchases() {
       <PurchaseHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={(event) =>
-          setBusinessId(
-            event.target.value,
-          )
-        }
+        onBusinessChange={selectBusiness}
         onAdd={openCreateModal}
       />
 

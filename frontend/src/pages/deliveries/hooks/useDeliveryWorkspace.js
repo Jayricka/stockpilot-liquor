@@ -4,12 +4,13 @@ import {
   useState,
 } from 'react'
 
+import { useBusiness } from '../../../context/BusinessContext'
+
 import {
   getBusinessMembers,
   getDeliveries,
 } from '../../../services/deliveries'
 
-import { getBusinesses } from '../../../services/dashboard'
 import { getSales } from '../../../services/sales'
 
 function getErrorMessage(
@@ -23,11 +24,12 @@ function getErrorMessage(
 }
 
 function useDeliveryWorkspace() {
-  const [businesses, setBusinesses] =
-    useState([])
-
-  const [businessId, setBusinessId] =
-    useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
 
   const [deliveries, setDeliveries] =
     useState([])
@@ -51,38 +53,10 @@ function useDeliveryWorkspace() {
     useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data =
-          await getBusinesses()
+    let active = true
 
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(
-            String(data[0].id),
-          )
-        }
-      } catch (err) {
-        setError(
-          getErrorMessage(
-            err,
-            'Failed to load businesses.',
-          ),
-        )
-      }
-    }
-
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
     async function loadWorkspace() {
       if (!businessId) {
-        setDeliveries([])
-        setSales([])
-        setMembers([])
-        setLoading(false)
         return
       }
 
@@ -107,10 +81,18 @@ function useDeliveryWorkspace() {
           ),
         ])
 
+        if (!active) {
+          return
+        }
+
         setDeliveries(deliveryData)
         setSales(salesData)
         setMembers(memberData)
       } catch (err) {
+        if (!active) {
+          return
+        }
+
         setError(
           getErrorMessage(
             err,
@@ -118,11 +100,17 @@ function useDeliveryWorkspace() {
           ),
         )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadWorkspace()
+
+    return () => {
+      active = false
+    }
   }, [businessId, status])
 
   const availableSales =
@@ -177,10 +165,14 @@ function useDeliveryWorkspace() {
       )
     }, [deliveries, search])
 
+  function handleBusinessChange(event) {
+    selectBusiness(event.target.value)
+  }
+
   return {
     businesses,
     businessId,
-    setBusinessId,
+    selectBusiness: handleBusinessChange,
     deliveries,
     setDeliveries,
     sales,
@@ -190,7 +182,8 @@ function useDeliveryWorkspace() {
     setSearch,
     status,
     setStatus,
-    loading,
+    loading:
+      businessLoading || loading,
     error,
     setError,
     availableSales,

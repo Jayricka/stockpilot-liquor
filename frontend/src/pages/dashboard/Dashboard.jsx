@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
+import {
+  useEffect,
+  useState,
+} from 'react'
 
 import {
-  getBusinesses,
   getDashboard,
 } from '../../services/dashboard'
+
+import {
+  useBusiness,
+} from '../../context/BusinessContext'
 
 import DashboardHeader from '../../components/dashboard/DashboardHeader'
 import DashboardLoading from '../../components/dashboard/DashboardLoading'
@@ -16,52 +22,75 @@ import TopProducts from '../../components/dashboard/TopProducts'
 import SubscriptionBanner from '../../components/dashboard/SubscriptionBanner'
 
 function Dashboard() {
-  const [businesses, setBusinesses] = useState([])
-  const [businessId, setBusinessId] = useState(null)
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
+
+  const [dashboard, setDashboard] =
+    useState(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data = await getBusinesses()
+    let active = true
 
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(data[0].id)
-        }
-      } catch {
-        setError('Unable to load your businesses.')
-        setLoading(false)
+    if (!businessId) {
+      return () => {
+        active = false
       }
     }
 
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
-    if (!businessId) return
-
     async function loadDashboard() {
-      setLoading(true)
-      setError('')
-
       try {
-        const data = await getDashboard(businessId)
+        setLoading(true)
+        setError('')
+
+        const data =
+          await getDashboard(businessId)
+
+        if (!active) {
+          return
+        }
+
         setDashboard(data)
       } catch {
-        setError('Unable to load dashboard data.')
+        if (!active) {
+          return
+        }
+
+        setDashboard(null)
+        setError(
+          'Unable to load dashboard data.',
+        )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadDashboard()
+
+    return () => {
+      active = false
+    }
   }, [businessId])
 
-  if (loading && !dashboard) {
+  function handleBusinessChange(event) {
+    selectBusiness(event.target.value)
+  }
+
+  if (
+    businessLoading ||
+    (loading && !dashboard)
+  ) {
     return <DashboardLoading />
   }
 
@@ -79,10 +108,21 @@ function Dashboard() {
   if (!dashboard) {
     return (
       <section className="dashboard-page">
+        <SubscriptionBanner />
+
+        <DashboardHeader
+          businesses={businesses}
+          businessId={businessId}
+          onBusinessChange={
+            handleBusinessChange
+          }
+        />
+
         <div className="dashboard-empty">
           <h2>No business found</h2>
           <p>
-            Create a business to start using StockPilot.
+            Create a business to start using
+            StockPilot.
           </p>
         </div>
       </section>
@@ -98,7 +138,9 @@ function Dashboard() {
       <DashboardHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={setBusinessId}
+        onBusinessChange={
+          handleBusinessChange
+        }
         date={dashboard.date}
       />
 
@@ -108,15 +150,18 @@ function Dashboard() {
           value={summary.today_revenue}
           type="currency"
         />
+
         <MetricCard
           label="Gross profit"
           value={summary.today_gross_profit}
           type="currency"
         />
+
         <MetricCard
           label="Today's sales"
           value={summary.today_sales_count}
         />
+
         <MetricCard
           label="Stock value"
           value={summary.total_stock_value}
@@ -126,26 +171,30 @@ function Dashboard() {
 
       <div className="dashboard-grid">
         <PaymentMethods
-          payments={dashboard.sales_by_payment_method}
+          payments={
+            dashboard.sales_by_payment_method
+          }
         />
-        <LowStock
-          products={dashboard.low_stock_products}
-        />
-      </div>
 
-      <div className="dashboard-grid">
+        <LowStock
+          products={
+            dashboard.low_stock_products
+          }
+        />
+
         <RecentSales
           sales={dashboard.recent_sales}
         />
+
         <BusinessSnapshot
           summary={summary}
-          purchases={dashboard.recent_purchases}
+          purchases={dashboard.purchases}
+        />
+
+        <TopProducts
+          products={dashboard.top_products}
         />
       </div>
-
-      <TopProducts
-        products={dashboard.top_products}
-      />
     </section>
   )
 }

@@ -1,12 +1,11 @@
 import { useState } from 'react'
 
-import { updateBusiness } from '../../../services/settings'
+import { updateBusiness as saveBusiness } from '../../../services/settings'
 
 export function useBusinessSettings({
   businessId,
   businessForm,
-  setBusiness,
-  setBusinesses,
+  updateBusiness,
   setError,
   setMessage,
 }) {
@@ -25,7 +24,7 @@ export function useBusinessSettings({
       setError('')
       setMessage('')
 
-      const updated = await updateBusiness(
+      const updated = await saveBusiness(
         businessId,
         {
           name:
@@ -43,15 +42,7 @@ export function useBusinessSettings({
         },
       )
 
-      setBusiness(updated)
-
-      setBusinesses((current) =>
-        current.map((item) =>
-          item.id === Number(businessId)
-            ? updated
-            : item,
-        ),
-      )
+      updateBusiness(updated)
 
       setMessage(
         'Business information updated successfully.',

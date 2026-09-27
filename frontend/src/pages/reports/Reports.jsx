@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
-
 import {
-  getBusinesses,
-} from '../../services/dashboard'
+  useEffect,
+  useState,
+} from 'react'
 
 import {
   getReport,
 } from '../../services/reports'
+
+import {
+  useBusiness,
+} from '../../context/BusinessContext'
 
 import ReportHeader from '../../components/reports/ReportHeader'
 import ReportLoading from '../../components/reports/ReportLoading'
@@ -18,11 +21,12 @@ import RecentSales from '../../components/reports/RecentSales'
 import RecentPurchases from '../../components/reports/RecentPurchases'
 
 function Reports() {
-  const [businesses, setBusinesses] =
-    useState([])
-
-  const [businessId, setBusinessId] =
-    useState(null)
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
 
   const [report, setReport] =
     useState(null)
@@ -34,60 +38,72 @@ function Reports() {
     useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data =
-          await getBusinesses()
+    let active = true
 
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(data[0].id)
-        }
-      } catch {
-        setError(
-          'Unable to load your businesses.',
-        )
-        setLoading(false)
+    if (!businessId) {
+      return () => {
+        active = false
       }
     }
 
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
-    if (!businessId) {
-      return
-    }
-
     async function loadReport() {
-      setLoading(true)
-      setError('')
-
       try {
+        setLoading(true)
+        setError('')
+
         const data =
           await getReport(businessId)
 
+        if (!active) {
+          return
+        }
+
         setReport(data)
       } catch {
+        if (!active) {
+          return
+        }
+
+        setReport(null)
         setError(
           'Unable to load report data.',
         )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadReport()
+
+    return () => {
+      active = false
+    }
   }, [businessId])
 
-  if (loading && !report) {
+  function handleBusinessChange(event) {
+    selectBusiness(event.target.value)
+  }
+
+  if (
+    businessLoading ||
+    (loading && !report)
+  ) {
     return <ReportLoading />
   }
 
   if (error && !report) {
     return (
       <section className="reports-page">
+        <ReportHeader
+          businesses={businesses}
+          businessId={businessId}
+          onBusinessChange={
+            handleBusinessChange
+          }
+        />
+
         <div className="reports-error">
           <h2>Something went wrong</h2>
           <p>{error}</p>
@@ -99,6 +115,14 @@ function Reports() {
   if (!report) {
     return (
       <section className="reports-page">
+        <ReportHeader
+          businesses={businesses}
+          businessId={businessId}
+          onBusinessChange={
+            handleBusinessChange
+          }
+        />
+
         <div className="reports-empty">
           <h2>No business found</h2>
 
@@ -116,7 +140,9 @@ function Reports() {
       <ReportHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={setBusinessId}
+        onBusinessChange={
+          handleBusinessChange
+        }
         date={report.date}
       />
 
@@ -147,17 +173,21 @@ function Reports() {
 
       <div className="reports-grid">
         <LowStockReport
-          products={report.low_stock_products}
+          products={
+            report.low_stock_products
+          }
         />
 
         <RecentSales
           sales={report.recent_sales}
         />
-      </div>
 
-      <RecentPurchases
-        purchases={report.recent_purchases}
-      />
+        <RecentPurchases
+          purchases={
+            report.recent_purchases
+          }
+        />
+      </div>
     </section>
   )
 }

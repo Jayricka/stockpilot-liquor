@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
-
 import {
-  getBusinesses,
-  getDashboard,
-} from '../../services/dashboard'
+  useEffect,
+  useState,
+} from 'react'
+
+import { useBusiness } from '../../context/BusinessContext'
+import { getDashboard } from '../../services/dashboard'
 
 import DashboardHeader from '../../components/dashboard/DashboardHeader'
 import DashboardLoading from '../../components/dashboard/DashboardLoading'
@@ -15,50 +16,69 @@ import BusinessSnapshot from '../../components/dashboard/BusinessSnapshot'
 import TopProducts from '../../components/dashboard/TopProducts'
 
 function Dashboard() {
-  const [businesses, setBusinesses] = useState([])
-  const [businessId, setBusinessId] = useState(null)
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
+
+  const [dashboard, setDashboard] =
+    useState(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data = await getBusinesses()
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(data[0].id)
-        }
-      } catch {
-        setError('Unable to load your businesses.')
-      }
+    if (!businessId) {
+      return undefined
     }
 
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
-    if (!businessId) return
+    let active = true
 
     async function loadDashboard() {
-      setLoading(true)
-      setError('')
-
       try {
-        const data = await getDashboard(businessId)
+        setLoading(true)
+        setError('')
+
+        const data =
+          await getDashboard(businessId)
+
+        if (!active) {
+          return
+        }
+
         setDashboard(data)
       } catch {
-        setError('Unable to load dashboard data.')
+        if (!active) {
+          return
+        }
+
+        setDashboard(null)
+        setError(
+          'Unable to load dashboard data.',
+        )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadDashboard()
+
+    return () => {
+      active = false
+    }
   }, [businessId])
 
-  if (loading && !dashboard) {
+  if (
+    businessLoading ||
+    (loading && !dashboard)
+  ) {
     return <DashboardLoading />
   }
 
@@ -78,7 +98,10 @@ function Dashboard() {
       <section className="dashboard-page">
         <div className="dashboard-empty">
           <h2>No business found</h2>
-          <p>Create a business to start using StockPilot.</p>
+          <p>
+            Create a business to start using
+            StockPilot.
+          </p>
         </div>
       </section>
     )
@@ -91,7 +114,7 @@ function Dashboard() {
       <DashboardHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={setBusinessId}
+        onBusinessChange={selectBusiness}
         date={dashboard.date}
       />
 
@@ -122,28 +145,28 @@ function Dashboard() {
 
       <div className="dashboard-grid">
         <PaymentMethods
-          payments={dashboard.sales_by_payment_method}
+          payments={
+            dashboard.sales_by_payment_method
+          }
         />
 
         <LowStock
-          products={dashboard.low_stock_products}
+          products={dashboard.low_stock}
         />
-      </div>
 
-      <div className="dashboard-grid">
         <RecentSales
           sales={dashboard.recent_sales}
         />
 
         <BusinessSnapshot
           summary={summary}
-          purchases={dashboard.recent_purchases}
+          purchases={dashboard.purchases}
+        />
+
+        <TopProducts
+          products={dashboard.top_products}
         />
       </div>
-
-      <TopProducts
-        products={dashboard.top_products}
-      />
     </section>
   )
 }

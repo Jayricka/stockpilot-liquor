@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
-
 import {
-  getBusinesses,
-} from '../../services/dashboard'
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
   getProducts,
 } from '../../services/inventory'
+
+import {
+  useBusiness,
+} from '../../context/BusinessContext'
 
 import InventoryHeader from '../../components/inventory/InventoryHeader'
 import InventoryFilters from '../../components/inventory/InventoryFilters'
@@ -15,42 +19,48 @@ import InventoryTable from '../../components/inventory/InventoryTable'
 import InventoryLoading from '../../components/inventory/InventoryLoading'
 
 function Inventory() {
-  const [businesses, setBusinesses] = useState([])
-  const [businessId, setBusinessId] = useState(null)
-  const [products, setProducts] = useState([])
-  const [search, setSearch] = useState('')
-  const [lowStockOnly, setLowStockOnly] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    businesses,
+    businessId,
+    selectBusiness,
+    loading: businessLoading,
+  } = useBusiness()
+
+  const [products, setProducts] =
+    useState([])
+
+  const [search, setSearch] =
+    useState('')
+
+  const [lowStockOnly, setLowStockOnly] =
+    useState(false)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
 
   useEffect(() => {
-    async function loadBusinesses() {
-      try {
-        const data = await getBusinesses()
+    let active = true
 
-        setBusinesses(data)
-
-        if (data.length) {
-          setBusinessId(data[0].id)
-        }
-      } catch {
-        setError('Unable to load your businesses.')
-        setLoading(false)
+    if (!businessId) {
+      return () => {
+        active = false
       }
     }
 
-    loadBusinesses()
-  }, [])
-
-  useEffect(() => {
-    if (!businessId) return
-
     async function loadProducts() {
-      setLoading(true)
-      setError('')
-
       try {
-        const data = await getProducts(businessId)
+        setLoading(true)
+        setError('')
+
+        const data =
+          await getProducts(businessId)
+
+        if (!active) {
+          return
+        }
 
         setProducts(
           Array.isArray(data)
@@ -58,34 +68,70 @@ function Inventory() {
             : data.results || [],
         )
       } catch {
-        setError('Unable to load inventory.')
+        if (!active) {
+          return
+        }
+
+        setProducts([])
+        setError(
+          'Unable to load inventory.',
+        )
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     loadProducts()
+
+    return () => {
+      active = false
+    }
   }, [businessId])
 
   const filteredProducts = useMemo(() => {
-    const query = search.toLowerCase().trim()
+    const query =
+      search.toLowerCase().trim()
 
     return products.filter((product) => {
       const matchesSearch =
         !query ||
-        product.name?.toLowerCase().includes(query) ||
-        product.sku?.toLowerCase().includes(query)
+        product.name
+          ?.toLowerCase()
+          .includes(query) ||
+        product.sku
+          ?.toLowerCase()
+          .includes(query)
 
       const matchesStock =
         !lowStockOnly ||
-        Number(product.stock_quantity || 0) <=
-          Number(product.reorder_level || 0)
+        Number(
+          product.stock_quantity || 0,
+        ) <=
+          Number(
+            product.reorder_level || 0,
+          )
 
-      return matchesSearch && matchesStock
+      return (
+        matchesSearch &&
+        matchesStock
+      )
     })
-  }, [products, search, lowStockOnly])
+  }, [
+    products,
+    search,
+    lowStockOnly,
+  ])
 
-  if (loading && !products.length) {
+  function handleBusinessChange(value) {
+    selectBusiness(value)
+  }
+
+  if (
+    businessLoading ||
+    (loading && !products.length)
+  ) {
     return <InventoryLoading />
   }
 
@@ -94,7 +140,9 @@ function Inventory() {
       <InventoryHeader
         businesses={businesses}
         businessId={businessId}
-        onBusinessChange={setBusinessId}
+        onBusinessChange={
+          handleBusinessChange
+        }
       />
 
       {error && (
@@ -103,16 +151,22 @@ function Inventory() {
         </div>
       )}
 
-      <InventoryStats products={products} />
+      <InventoryStats
+        products={products}
+      />
 
       <InventoryFilters
         search={search}
         onSearchChange={setSearch}
         lowStockOnly={lowStockOnly}
-        onLowStockChange={setLowStockOnly}
+        onLowStockChange={
+          setLowStockOnly
+        }
       />
 
-      <InventoryTable products={filteredProducts} />
+      <InventoryTable
+        products={filteredProducts}
+      />
     </section>
   )
 }

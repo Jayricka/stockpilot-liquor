@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import SettingsHeader from '../../components/settings/SettingsHeader'
 import ProfileSettings from '../../components/settings/ProfileSettings'
 import BusinessSettings from '../../components/settings/BusinessSettings'
@@ -6,8 +8,6 @@ import TeamSettings from '../../components/settings/TeamSettings'
 import { useSettingsWorkspace } from './hooks/useSettingsWorkspace'
 import { useProfileSettings } from './hooks/useProfileSettings'
 import { useBusinessSettings } from './hooks/useBusinessSettings'
-
-import { useState } from 'react'
 
 function Settings() {
   const [error, setError] = useState('')
@@ -29,8 +29,8 @@ function Settings() {
     useBusinessSettings({
       businessId: workspace.businessId,
       businessForm: workspace.businessForm,
-      setBusiness: workspace.setBusiness,
-      setBusinesses: workspace.setBusinesses,
+      updateBusiness:
+        workspace.updateBusiness,
       setError,
       setMessage,
     })
