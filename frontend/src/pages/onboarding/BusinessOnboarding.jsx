@@ -4,16 +4,14 @@ import {
   Check,
   Zap,
 } from 'lucide-react'
-import { useState } from 'react'
 import {
   Link,
   Navigate,
-  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 
 import { useAuth } from '../../context/AuthContext.jsx'
-import { onboardBusiness } from '../../services/businesses.js'
+import { useBusinessOnboarding } from './hooks/useBusinessOnboarding'
 
 const plans = [
   {
@@ -34,11 +32,11 @@ const plans = [
 ]
 
 function BusinessOnboarding() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { isAuthenticated } = useAuth()
 
-  const requestedPlan = searchParams.get('plan')
+  const requestedPlan =
+    searchParams.get('plan')
 
   const initialPlan = plans.some(
     (plan) => plan.code === requestedPlan,
@@ -46,18 +44,13 @@ function BusinessOnboarding() {
     ? requestedPlan
     : 'starter'
 
-  const [formData, setFormData] = useState({
-    name: '',
-    business_type: 'liquor_store',
-    phone: '',
-    email: '',
-    address: '',
-    license_number: '',
-    plan: initialPlan,
-  })
-
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const {
+    formData,
+    error,
+    loading,
+    handleChange,
+    handleSubmit,
+  } = useBusinessOnboarding(initialPlan)
 
   if (!isAuthenticated) {
     return (
@@ -66,56 +59,6 @@ function BusinessOnboarding() {
         replace
       />
     )
-  }
-
-  function handleChange(event) {
-    const { name, value } = event.target
-
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }))
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-
-    setError('')
-    setLoading(true)
-
-    try {
-      const response = await onboardBusiness(
-        formData,
-      )
-
-      sessionStorage.setItem(
-        'stockpilot-business',
-        JSON.stringify(response.business),
-      )
-
-      sessionStorage.setItem(
-        'stockpilot-subscription',
-        JSON.stringify(response.subscription),
-      )
-
-      navigate('/dashboard', {
-        replace: true,
-      })
-    } catch (requestError) {
-      const responseData =
-        requestError.response?.data
-
-      const message =
-        responseData?.detail ||
-        responseData?.name?.[0] ||
-        responseData?.phone?.[0] ||
-        responseData?.plan?.[0] ||
-        'Unable to create your business. Please try again.'
-
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   return (
