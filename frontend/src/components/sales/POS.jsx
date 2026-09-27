@@ -1,64 +1,12 @@
-import {
-  useMemo,
-  useState,
-} from 'react'
+import { useState } from 'react'
 
+import useSaleCart from './hooks/useSaleCart'
+import useSaleCheckout from './hooks/useSaleCheckout'
+import useSaleActions from './hooks/useSaleActions'
 import ProductSearch from './ProductSearch'
 import ProductGrid from './ProductGrid'
 import Cart from './Cart'
 import SaleSummary from './SaleSummary'
-
-import {
-  completeSale,
-  createSale,
-} from '../../services/sales'
-
-function getErrorMessage(error) {
-  const data = error?.response?.data
-
-  if (!data) {
-    return 'Unable to complete the sale.'
-  }
-
-  if (typeof data.detail === 'string') {
-    return data.detail
-  }
-
-  if (Array.isArray(data.detail)) {
-    return data.detail.join(', ')
-  }
-
-  if (Array.isArray(data.non_field_errors)) {
-    return data.non_field_errors.join(', ')
-  }
-
-  const firstError = Object.values(data)[0]
-
-  if (Array.isArray(firstError)) {
-    return firstError.join(', ')
-  }
-
-  if (typeof firstError === 'string') {
-    return firstError
-  }
-
-  return 'Unable to complete the sale.'
-}
-
-function getToday() {
-  const now = new Date()
-
-  const year = now.getFullYear()
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, '0')
-
-  const day = String(
-    now.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
 
 function POS({
   products,
@@ -67,239 +15,55 @@ function POS({
   loading,
   onSaleCompleted,
 }) {
-  const [cart, setCart] = useState([])
+  const {
+    cart,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+  } = useSaleCart()
 
   const [search, setSearch] =
     useState('')
 
-  const [discount, setDiscount] =
-    useState('')
+  const {
+    discount,
+    setDiscount,
+    paymentMethod,
+    setPaymentMethod,
+    amountReceived,
+    setAmountReceived,
+    subtotal,
+    discountAmount,
+    total,
+    change,
+  } = useSaleCheckout(cart)
 
-  const [paymentMethod, setPaymentMethod] =
-    useState('CASH')
-
-  const [amountReceived, setAmountReceived] =
-    useState('')
-
-  const [saving, setSaving] =
-    useState(false)
-
-  const [error, setError] =
-    useState('')
-
-  const subtotal = useMemo(
-    () =>
-      cart.reduce(
-        (total, item) =>
-          total +
-          Number(item.selling_price || 0) *
-            Number(item.quantity || 0),
-        0,
-      ),
-    [cart],
-  )
-
-  const discountAmount =
-    Number(discount || 0)
-
-  const total = Math.max(
-    subtotal - discountAmount,
-    0,
-  )
-
-  const change =
-    paymentMethod === 'CASH'
-      ? Math.max(
-          Number(amountReceived || 0) -
-            total,
-          0,
-        )
-      : 0
-
-  function addToCart(product) {
+  function handleAddToCart(product) {
     setError('')
-
-    const stock = Number(
-      product.stock_quantity || 0,
-    )
-
-    if (stock <= 0) {
-      return
-    }
-
-    setCart((currentCart) => {
-      const existing = currentCart.find(
-        (item) =>
-          item.id === product.id,
-      )
-
-      if (existing) {
-        if (
-          Number(existing.quantity) >=
-          stock
-        ) {
-          return currentCart
-        }
-
-        return currentCart.map(
-          (item) =>
-            item.id === product.id
-              ? {
-                  ...item,
-                  quantity:
-                    Number(
-                      item.quantity,
-                    ) + 1,
-                }
-              : item,
-        )
-      }
-
-      return [
-        ...currentCart,
-        {
-          ...product,
-          quantity: 1,
-        },
-      ]
-    })
+    addToCart(product)
   }
 
-  function updateQuantity(
-    productId,
-    quantity,
-  ) {
-    const product = cart.find(
-      (item) =>
-        item.id === productId,
-    )
+  const {
+    saving,
+    error,
+    setError,
+    handleCompleteSale,
+  } = useSaleActions({
+    businessId,
+    cart,
+    discountAmount,
+    subtotal,
+    paymentMethod,
+    amountReceived,
+    total,
+    clearCart,
+    setDiscount,
+    setAmountReceived,
+    setPaymentMethod,
+    onSaleCompleted,
+  })
 
-    if (!product) {
-      return
-    }
-
-    const stock = Number(
-      product.stock_quantity || 0,
-    )
-
-    const nextQuantity =
-      Number(quantity)
-
-    if (nextQuantity <= 0) {
-      removeFromCart(productId)
-      return
-    }
-
-    if (nextQuantity > stock) {
-      return
-    }
-
-    setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.id === productId
-          ? {
-              ...item,
-              quantity:
-                nextQuantity,
-            }
-          : item,
-      ),
-    )
-  }
-
-  function removeFromCart(productId) {
-    setCart((currentCart) =>
-      currentCart.filter(
-        (item) =>
-          item.id !== productId,
-      ),
-    )
-  }
-
-  async function handleCompleteSale() {
-    setError('')
-
-    if (!businessId) {
-      setError(
-        'Please select a business first.',
-      )
-      return
-    }
-
-    if (!cart.length) {
-      setError(
-        'Add at least one product to the cart.',
-      )
-      return
-    }
-
-    if (discountAmount < 0) {
-      setError(
-        'Discount cannot be negative.',
-      )
-      return
-    }
-
-    if (discountAmount > subtotal) {
-      setError(
-        'Discount cannot exceed the sale subtotal.',
-      )
-      return
-    }
-
-    if (
-      paymentMethod === 'CASH' &&
-      Number(amountReceived || 0) <
-        total
-    ) {
-      setError(
-        'Amount received is insufficient.',
-      )
-      return
-    }
-
-    try {
-      setSaving(true)
-
-      const payload = {
-        invoice_number: `SP-${Date.now()}`,
-        discount_amount:
-          discountAmount,
-        payment_method:
-          paymentMethod,
-        sale_date: getToday(),
-        items: cart.map((item) => ({
-          product: item.id,
-          quantity: item.quantity,
-        })),
-      }
-
-      const sale = await createSale(
-        businessId,
-        payload,
-      )
-
-      await completeSale(
-        businessId,
-        sale.id,
-      )
-
-      setCart([])
-      setDiscount('')
-      setAmountReceived('')
-      setPaymentMethod('CASH')
-
-      if (onSaleCompleted) {
-        onSaleCompleted()
-      }
-    } catch (requestError) {
-      setError(
-        getErrorMessage(requestError),
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <section className="pos-workspace">
@@ -335,7 +99,7 @@ function POS({
             products={products}
             search={search}
             loading={loading}
-            onAdd={addToCart}
+            onAdd={handleAddToCart}
           />
         </section>
 
