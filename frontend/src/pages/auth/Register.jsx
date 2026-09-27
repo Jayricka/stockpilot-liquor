@@ -4,106 +4,35 @@ import {
   EyeOff,
   Zap,
 } from 'lucide-react'
-import { useState } from 'react'
 import {
   Link,
-  useNavigate,
   useSearchParams,
 } from 'react-router-dom'
 
-import { useAuth } from '../../context/AuthContext.jsx'
-import { registerUser } from '../../services/auth.js'
-
-const validPlans = [
-  'starter',
-  'growth',
-  'business',
-]
+import { useRegisterForm } from './hooks/useRegisterForm'
 
 function Register() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { saveSession } = useAuth()
-
   const requestedPlan = searchParams.get('plan')
 
-  const selectedPlan = validPlans.includes(
-    requestedPlan,
-  )
-    ? requestedPlan
-    : 'starter'
+  const {
+    selectedPlan,
+    formData,
+    confirmPassword,
+    showPassword,
+    showConfirmPassword,
+    error,
+    loading,
+    handleChange,
+    handleSubmit,
+    setConfirmPassword,
+    setShowPassword,
+    setShowConfirmPassword,
+  } = useRegisterForm(requestedPlan)
 
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-  })
-
-  const [confirmPassword, setConfirmPassword] =
-    useState('')
-
-  const [showPassword, setShowPassword] =
-    useState(false)
-
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState(false)
-
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  function handleChange(event) {
-    const { name, value } = event.target
-
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }))
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-
-    setError('')
-
-    if (formData.password !== confirmPassword) {
-      setError('Passwords do not match.')
-      return
-    }
-
-    if (formData.password.length < 8) {
-      setError(
-        'Password must be at least 8 characters.',
-      )
-      return
-    }
-
-    setLoading(true)
-
-    try {
-      const session = await registerUser(formData)
-
-      saveSession(session, session.user)
-
-      navigate(
-        `/onboarding?plan=${selectedPlan}`,
-        { replace: true },
-      )
-    } catch (requestError) {
-      const responseData =
-        requestError.response?.data
-
-      const message =
-        responseData?.detail ||
-        responseData?.email?.[0] ||
-        responseData?.password?.[0] ||
-        'Unable to create your account. Please try again.'
-
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const planName =
+    selectedPlan.charAt(0).toUpperCase() +
+    selectedPlan.slice(1)
 
   return (
     <main className="auth-page">
@@ -143,10 +72,7 @@ function Register() {
         <div className="auth-plan-summary">
           <span>Selected plan</span>
 
-          <strong>
-            {selectedPlan.charAt(0).toUpperCase() +
-              selectedPlan.slice(1)}
-          </strong>
+          <strong>{planName}</strong>
 
           <small>
             7-day free trial
