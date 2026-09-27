@@ -28,6 +28,18 @@ export async function getCategories(businessId) {
   return normalizeListResponse(response.data)
 }
 
+export async function createCategory(
+  businessId,
+  payload
+) {
+  const response = await api.post(
+    `/businesses/${businessId}/categories/`,
+    payload
+  )
+
+  return response.data
+}
+
 export async function createProduct(
   businessId,
   payload

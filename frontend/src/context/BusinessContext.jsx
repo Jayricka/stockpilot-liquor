@@ -138,7 +138,7 @@ export function BusinessProvider({ children }) {
     (businessId) => {
       const selectedBusiness =
         businesses.find(
-          (item) => item.id === businessId,
+          (item) => Number(item.id) === Number(businessId),
         ) || null
 
       setBusiness(selectedBusiness)
