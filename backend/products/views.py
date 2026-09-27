@@ -3,7 +3,11 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from billing.permissions import HasOperationalAccess
+from billing.models import PlanEntitlement
+from billing.permissions import (
+    HasFeatureAccess,
+    HasOperationalAccess,
+)
 from businesses.models import BusinessMembership
 
 from .models import Category, Product
@@ -43,7 +47,9 @@ class CategoryListCreateView(
     permission_classes = [
         IsAuthenticated,
         HasOperationalAccess,
+        HasFeatureAccess,
     ]
+    required_feature = PlanEntitlement.Feature.INVENTORY
 
     def get_queryset(self):
         business = self.get_business()
@@ -78,7 +84,9 @@ class CategoryDetailView(
     permission_classes = [
         IsAuthenticated,
         HasOperationalAccess,
+        HasFeatureAccess,
     ]
+    required_feature = PlanEntitlement.Feature.INVENTORY
 
     def get_queryset(self):
         business = self.get_business()
@@ -107,7 +115,9 @@ class ProductListCreateView(
     permission_classes = [
         IsAuthenticated,
         HasOperationalAccess,
+        HasFeatureAccess,
     ]
+    required_feature = PlanEntitlement.Feature.INVENTORY
 
     def get_queryset(self):
         business = self.get_business()
@@ -143,7 +153,9 @@ class ProductDetailView(
     permission_classes = [
         IsAuthenticated,
         HasOperationalAccess,
+        HasFeatureAccess,
     ]
+    required_feature = PlanEntitlement.Feature.INVENTORY
 
     def get_queryset(self):
         business = self.get_business()

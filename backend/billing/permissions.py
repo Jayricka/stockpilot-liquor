@@ -3,6 +3,7 @@ from rest_framework.permissions import BasePermission
 from businesses.models import BusinessMembership
 
 from .models import Subscription
+from .services.entitlements import EntitlementService
 from .services.subscriptions import SubscriptionService
 
 
@@ -49,3 +50,43 @@ class HasOperationalAccess(BasePermission):
             Subscription.Status.TRIALING,
             Subscription.Status.ACTIVE,
         }
+
+
+class HasFeatureAccess(BasePermission):
+    message = (
+        "Your current plan does not include this feature."
+    )
+
+    def has_permission(self, request, view):
+        business_id = view.kwargs.get("business_id")
+
+        if not business_id:
+            return True
+
+        membership = (
+            BusinessMembership.objects
+            .filter(
+                user=request.user,
+                business_id=business_id,
+                is_active=True,
+            )
+            .select_related("business")
+            .first()
+        )
+
+        if membership is None:
+            return True
+
+        feature = getattr(
+            view,
+            "required_feature",
+            None,
+        )
+
+        if not feature:
+            return True
+
+        return EntitlementService.has_feature(
+            membership.business,
+            feature,
+        )

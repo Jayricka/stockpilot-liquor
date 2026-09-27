@@ -1,7 +1,11 @@
+from datetime import timedelta
+
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User
+from billing.models import Plan, Subscription
 from businesses.models import Business, BusinessMembership
 from suppliers.models import Supplier
 
@@ -46,6 +50,33 @@ class SupplierTestBase(APITestCase):
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
             is_active=True,
+        )
+
+        self.plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+            is_active=True,
+        )
+
+        now = timezone.now()
+
+        Subscription.objects.create(
+            business=self.business,
+            plan=self.plan,
+            status=Subscription.Status.TRIALING,
+            trial_started_at=now,
+            trial_ends_at=(
+                now + timedelta(days=self.plan.trial_days)
+            ),
+        )
+
+        Subscription.objects.create(
+            business=self.other_business,
+            plan=self.plan,
+            status=Subscription.Status.TRIALING,
+            trial_started_at=now,
+            trial_ends_at=(
+                now + timedelta(days=self.plan.trial_days)
+            ),
         )
 
         self.supplier = Supplier.objects.create(

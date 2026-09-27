@@ -4,6 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
+from billing.models import PlanEntitlement
+from billing.permissions import (
+    HasFeatureAccess,
+    HasOperationalAccess,
+)
 from businesses.models import Business
 
 from .models import Supplier
@@ -12,7 +17,12 @@ from .services import SupplierService
 
 
 class BusinessAccessMixin:
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.SUPPLIERS
 
     def get_business(self):
         return get_object_or_404(

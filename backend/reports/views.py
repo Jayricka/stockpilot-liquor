@@ -4,6 +4,11 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from billing.models import PlanEntitlement
+from billing.permissions import (
+    HasFeatureAccess,
+    HasOperationalAccess,
+)
 from businesses.models import Business
 
 from .serializers import DashboardSerializer
@@ -11,7 +16,12 @@ from .services import DashboardService
 
 
 class DashboardView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.REPORTS
     serializer_class = DashboardSerializer
 
     def get_business(self):

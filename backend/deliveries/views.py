@@ -4,6 +4,11 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from billing.models import PlanEntitlement
+from billing.permissions import (
+    HasFeatureAccess,
+    HasOperationalAccess,
+)
 from businesses.models import Business
 from .models import DeliveryOrder
 from .serializers import DeliveryOrderSerializer
@@ -26,7 +31,12 @@ class DeliveryListCreateView(
     generics.ListCreateAPIView,
 ):
     serializer_class = DeliveryOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def get_queryset(self):
         business = self.get_business()
@@ -94,7 +104,12 @@ class DeliveryDetailView(
     generics.RetrieveAPIView,
 ):
     serializer_class = DeliveryOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def get_queryset(self):
         business = self.get_business()
@@ -118,7 +133,12 @@ class AssignDeliveryView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def post(self, request, business_id, pk):
         business = self.get_business()
@@ -177,7 +197,12 @@ class StartDeliveryView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def post(self, request, business_id, pk):
         business = self.get_business()
@@ -216,7 +241,12 @@ class CompleteDeliveryView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def post(self, request, business_id, pk):
         business = self.get_business()
@@ -255,7 +285,12 @@ class CancelDeliveryView(
     BusinessAccessMixin,
     generics.GenericAPIView,
 ):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated,
+        HasOperationalAccess,
+        HasFeatureAccess,
+    ]
+    required_feature = PlanEntitlement.Feature.DELIVERIES
 
     def post(self, request, business_id, pk):
         business = self.get_business()
