@@ -1,11 +1,19 @@
+from django.shortcuts import get_object_or_404
+
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound
 
-from businesses.models import BusinessMembership
+from businesses.models import Business
 
-from .models import Plan, Subscription
+from .models import (
+    Payment,
+    Plan,
+    PlanEntitlement,
+    Subscription,
+)
 from .serializers import (
+    PaymentSerializer,
+    PlanEntitlementSerializer,
     PlanSerializer,
     SubscriptionSerializer,
 )
@@ -21,36 +29,64 @@ class PlanListView(generics.ListAPIView):
         )
 
 
-class CurrentSubscriptionView(
+class BusinessSubscriptionView(
     generics.RetrieveAPIView,
 ):
     serializer_class = SubscriptionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        membership = (
-            BusinessMembership.objects
-            .filter(
-                user=self.request.user,
-                is_active=True,
-            )
-            .select_related("business")
-            .first()
+        business = get_object_or_404(
+            Business,
+            id=self.kwargs["business_id"],
+            memberships__user=self.request.user,
+            memberships__is_active=True,
         )
 
-        if not membership:
-            raise NotFound(
-                "You do not belong to an active business."
-            )
-
-        try:
-            return Subscription.objects.select_related(
+        return get_object_or_404(
+            Subscription.objects.select_related(
                 "plan",
                 "business",
-            ).get(
-                business=membership.business,
-            )
-        except Subscription.DoesNotExist:
-            raise NotFound(
-                "This business does not have a subscription."
-            )
+            ),
+            business=business,
+        )
+
+
+class BusinessEntitlementListView(
+    generics.ListAPIView,
+):
+    serializer_class = PlanEntitlementSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        business = get_object_or_404(
+            Business,
+            id=self.kwargs["business_id"],
+            memberships__user=self.request.user,
+            memberships__is_active=True,
+        )
+
+        return PlanEntitlement.objects.filter(
+            plan__subscriptions__business=business,
+        ).select_related("plan")
+
+
+class BusinessPaymentListView(
+    generics.ListAPIView,
+):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        business = get_object_or_404(
+            Business,
+            id=self.kwargs["business_id"],
+            memberships__user=self.request.user,
+            memberships__is_active=True,
+        )
+
+        return Payment.objects.filter(
+            subscription__business=business,
+        ).select_related(
+            "subscription",
+        )

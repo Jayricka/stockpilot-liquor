@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from .models import Payment, Plan, Subscription
+from .models import (
+    Payment,
+    Plan,
+    PlanEntitlement,
+    Subscription,
+)
 
 
 class PlanSerializer(serializers.ModelSerializer):
@@ -13,6 +18,18 @@ class PlanSerializer(serializers.ModelSerializer):
             "price",
             "currency",
             "trial_days",
+        ]
+
+
+class PlanEntitlementSerializer(
+    serializers.ModelSerializer
+):
+
+    class Meta:
+        model = PlanEntitlement
+        fields = [
+            "feature",
+            "value",
         ]
 
 
