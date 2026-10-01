@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from businesses.models import Business
 
@@ -12,11 +13,13 @@ from .models import (
     Subscription,
 )
 from .serializers import (
+    PaymentCreateSerializer,
     PaymentSerializer,
     PlanEntitlementSerializer,
     PlanSerializer,
     SubscriptionSerializer,
 )
+from .services.payments import PaymentService
 
 
 class PlanListView(generics.ListAPIView):
@@ -71,22 +74,81 @@ class BusinessEntitlementListView(
         ).select_related("plan")
 
 
-class BusinessPaymentListView(
-    generics.ListAPIView,
+class BusinessPaymentListCreateView(
+    generics.ListCreateAPIView,
 ):
-    serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        business = get_object_or_404(
+    def get_business(self):
+        return get_object_or_404(
             Business,
             id=self.kwargs["business_id"],
             memberships__user=self.request.user,
             memberships__is_active=True,
         )
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return PaymentCreateSerializer
+
+        return PaymentSerializer
+
+    def get_queryset(self):
+        business = self.get_business()
+
         return Payment.objects.filter(
             subscription__business=business,
         ).select_related(
             "subscription",
+        )
+
+    def create(self, request, *args, **kwargs):
+        business = self.get_business()
+
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        subscription = get_object_or_404(
+            Subscription,
+            business=business,
+        )
+
+        allowed_statuses = {
+            Subscription.Status.TRIALING,
+            Subscription.Status.ACTIVE,
+            Subscription.Status.PAST_DUE,
+        }
+
+        if subscription.status not in allowed_statuses:
+            return Response(
+                {
+                    "detail": (
+                        "Payments cannot be created for "
+                        "this subscription."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment = PaymentService.create_payment(
+            subscription=subscription,
+            amount=serializer.validated_data["amount"],
+            phone_number=serializer.validated_data[
+                "phone_number"
+            ],
+            currency=subscription.plan.currency,
+        )
+
+        response_serializer = PaymentSerializer(
+            payment
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED,
         )

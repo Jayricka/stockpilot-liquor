@@ -2,7 +2,7 @@ from django.urls import path
 
 from billing.views import (
     BusinessEntitlementListView,
-    BusinessPaymentListView,
+    BusinessPaymentListCreateView,
     BusinessSubscriptionView,
 )
 
@@ -47,7 +47,7 @@ urlpatterns = [
     ),
     path(
         "<int:business_id>/payments/",
-        BusinessPaymentListView.as_view(),
+        BusinessPaymentListCreateView.as_view(),
         name="business-payments",
     ),
 ]
