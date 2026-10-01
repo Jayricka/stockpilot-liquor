@@ -1,9 +1,11 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from accounts.models import User
+from billing.models import Plan, Subscription
 from businesses.models import Business, BusinessMembership
 from deliveries.models import DeliveryOrder
 from inventory.models import Purchase, PurchaseItem
@@ -51,6 +53,33 @@ class DashboardTestBase(APITestCase):
             business=self.other_business,
             role=BusinessMembership.Role.OWNER,
             is_active=True,
+        )
+
+        self.plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+            is_active=True,
+        )
+
+        now = timezone.now()
+
+        Subscription.objects.create(
+            business=self.business,
+            plan=self.plan,
+            status=Subscription.Status.TRIALING,
+            trial_started_at=now,
+            trial_ends_at=(
+                now + timedelta(days=self.plan.trial_days)
+            ),
+        )
+
+        Subscription.objects.create(
+            business=self.other_business,
+            plan=self.plan,
+            status=Subscription.Status.TRIALING,
+            trial_started_at=now,
+            trial_ends_at=(
+                now + timedelta(days=self.plan.trial_days)
+            ),
         )
 
         self.category = Category.objects.create(

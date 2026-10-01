@@ -4,7 +4,11 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from billing.permissions import HasOperationalAccess
+from billing.models import PlanEntitlement
+from billing.permissions import (
+    HasFeatureAccess,
+    HasOperationalAccess,
+)
 from businesses.models import Business
 
 from .models import Sale
@@ -16,7 +20,9 @@ class BusinessAccessMixin:
     permission_classes = [
         IsAuthenticated,
         HasOperationalAccess,
+        HasFeatureAccess,
     ]
+    required_feature = PlanEntitlement.Feature.SALES
 
     def get_business(self):
         return get_object_or_404(

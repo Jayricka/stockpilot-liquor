@@ -49,6 +49,56 @@ class Plan(models.Model):
         return f"{self.name} - {self.currency} {self.price}"
 
 
+class PlanEntitlement(models.Model):
+    class Feature(models.TextChoices):
+        INVENTORY = "inventory", "Inventory"
+        SALES = "sales", "Sales"
+        PURCHASES = "purchases", "Purchases"
+        SUPPLIERS = "suppliers", "Suppliers"
+        DELIVERIES = "deliveries", "Deliveries"
+        REPORTS = "reports", "Reports"
+        ADVANCED_REPORTS = "advanced_reports", "Advanced reports"
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.CASCADE,
+        related_name="entitlements",
+    )
+
+    feature = models.CharField(
+        max_length=50,
+        choices=Feature.choices,
+    )
+
+    value = models.CharField(
+        max_length=100,
+        default="true",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ["plan", "feature"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["plan", "feature"],
+                name="unique_plan_entitlement",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.plan.name} - "
+            f"{self.feature}: {self.value}"
+        )
+
+
 class Subscription(models.Model):
     class Status(models.TextChoices):
         TRIALING = "TRIALING", "Trialing"
