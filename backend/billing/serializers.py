@@ -33,6 +33,27 @@ class PlanEntitlementSerializer(
         ]
 
 
+class PaymentCreateSerializer(
+    serializers.Serializer
+):
+    amount = serializers.IntegerField(
+        min_value=1,
+    )
+    phone_number = serializers.CharField(
+        max_length=20,
+    )
+
+    def validate_phone_number(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Phone number is required."
+            )
+
+        return value
+
+
 class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
