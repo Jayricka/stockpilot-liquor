@@ -1,17 +1,29 @@
 from django.urls import path
-from .onboarding_views import BusinessOnboardingView
 
+from billing.views import (
+    BusinessEntitlementListView,
+    BusinessPaymentListView,
+    BusinessSubscriptionView,
+)
+
+from .onboarding_views import BusinessOnboardingView
 from .views import (
     BusinessDetailView,
     BusinessListCreateView,
     BusinessMemberListView,
 )
 
+
 urlpatterns = [
     path(
         "",
         BusinessListCreateView.as_view(),
         name="business-list-create",
+    ),
+    path(
+        "onboard/",
+        BusinessOnboardingView.as_view(),
+        name="business-onboard",
     ),
     path(
         "<int:business_id>/",
@@ -21,11 +33,21 @@ urlpatterns = [
     path(
         "<int:business_id>/members/",
         BusinessMemberListView.as_view(),
-        name="business-member-list",
+        name="business-members",
     ),
     path(
-    "onboard/",
-    BusinessOnboardingView.as_view(),
-    name="business-onboard",
-),
+        "<int:business_id>/subscription/",
+        BusinessSubscriptionView.as_view(),
+        name="business-subscription",
+    ),
+    path(
+        "<int:business_id>/entitlements/",
+        BusinessEntitlementListView.as_view(),
+        name="business-entitlements",
+    ),
+    path(
+        "<int:business_id>/payments/",
+        BusinessPaymentListView.as_view(),
+        name="business-payments",
+    ),
 ]
