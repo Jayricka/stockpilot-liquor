@@ -33,6 +33,78 @@ class SubscriptionService:
         return subscription
 
     @staticmethod
+    @transaction.atomic
+    def activate(subscription):
+        allowed_statuses = {
+            Subscription.Status.TRIALING,
+            Subscription.Status.PAST_DUE,
+        }
+
+        if subscription.status not in allowed_statuses:
+            raise ValueError(
+                "Only trialing or past due subscriptions "
+                "can be activated."
+            )
+
+        subscription.status = Subscription.Status.ACTIVE
+        subscription.save(
+            update_fields=[
+                "status",
+                "updated_at",
+            ]
+        )
+
+        return subscription
+
+    @staticmethod
+    @transaction.atomic
+    def mark_past_due(subscription):
+        if subscription.status != Subscription.Status.ACTIVE:
+            raise ValueError(
+                "Only active subscriptions can be marked "
+                "past due."
+            )
+
+        subscription.status = Subscription.Status.PAST_DUE
+        subscription.save(
+            update_fields=[
+                "status",
+                "updated_at",
+            ]
+        )
+
+        return subscription
+
+    @staticmethod
+    @transaction.atomic
+    def cancel(subscription):
+        allowed_statuses = {
+            Subscription.Status.TRIALING,
+            Subscription.Status.ACTIVE,
+            Subscription.Status.PAST_DUE,
+        }
+
+        if subscription.status not in allowed_statuses:
+            raise ValueError(
+                "Only trialing, active, or past due "
+                "subscriptions can be cancelled."
+            )
+
+        subscription.status = Subscription.Status.CANCELLED
+        subscription.cancelled_at = timezone.now()
+
+        subscription.save(
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "updated_at",
+            ]
+        )
+
+        return subscription
+
+    @staticmethod
+    @transaction.atomic
     def expire_trial(subscription):
         if (
             subscription.status
