@@ -12,7 +12,9 @@ import {
 import { useAuth } from './AuthContext.jsx'
 
 import { getBusinesses } from '../services/dashboard'
-import { getCurrentSubscription } from '../services/billing'
+import {
+  getCurrentSubscription,
+} from '../services/billing'
 
 const BusinessContext = createContext(null)
 
@@ -32,6 +34,7 @@ function getStoredSubscription() {
     sessionStorage.removeItem(
       'stockpilot-subscription',
     )
+
     return null
   }
 }
@@ -76,21 +79,9 @@ export function BusinessProvider({ children }) {
 
     let mounted = true
 
-    sessionStorage.removeItem(
-      'stockpilot-business',
-    )
-
-    sessionStorage.removeItem(
-      'stockpilot-subscription',
-    )
-
-    async function loadBusinesses() {
+    async function loadBusinessData() {
       try {
         setLoading(true)
-
-        sessionStorage.removeItem(
-          'stockpilot-business',
-        )
 
         const businessData =
           await getBusinesses()
@@ -106,10 +97,50 @@ export function BusinessProvider({ children }) {
 
         setBusiness(currentBusiness)
 
-        if (currentBusiness) {
-          sessionStorage.setItem(
+        if (!currentBusiness) {
+          setSubscription(null)
+
+          sessionStorage.removeItem(
             'stockpilot-business',
-            JSON.stringify(currentBusiness),
+          )
+
+          sessionStorage.removeItem(
+            'stockpilot-subscription',
+          )
+
+          setLoadedUserKey(userKey)
+
+          return
+        }
+
+        sessionStorage.setItem(
+          'stockpilot-business',
+          JSON.stringify(currentBusiness),
+        )
+
+        try {
+          const subscriptionData =
+            await getCurrentSubscription(
+              currentBusiness.id,
+            )
+
+          if (!mounted) {
+            return
+          }
+
+          setSubscription(subscriptionData)
+
+          sessionStorage.setItem(
+            'stockpilot-subscription',
+            JSON.stringify(subscriptionData),
+          )
+        } catch {
+          if (!mounted) {
+            return
+          }
+
+          setSubscription(
+            getStoredSubscription(),
           )
         }
 
@@ -121,10 +152,15 @@ export function BusinessProvider({ children }) {
 
         setBusinesses([])
         setBusiness(null)
+        setSubscription(null)
         setLoadedUserKey('')
 
         sessionStorage.removeItem(
           'stockpilot-business',
+        )
+
+        sessionStorage.removeItem(
+          'stockpilot-subscription',
         )
       } finally {
         if (mounted) {
@@ -133,34 +169,7 @@ export function BusinessProvider({ children }) {
       }
     }
 
-    async function loadSubscription() {
-      try {
-        const subscriptionData =
-          await getCurrentSubscription()
-
-        if (!mounted) {
-          return
-        }
-
-        setSubscription(subscriptionData)
-
-        sessionStorage.setItem(
-          'stockpilot-subscription',
-          JSON.stringify(subscriptionData),
-        )
-      } catch {
-        if (!mounted) {
-          return
-        }
-
-        setSubscription(
-          getStoredSubscription(),
-        )
-      }
-    }
-
-    loadBusinesses()
-    loadSubscription()
+    loadBusinessData()
 
     return () => {
       mounted = false

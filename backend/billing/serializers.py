@@ -64,6 +64,8 @@ class PaymentSerializer(serializers.ModelSerializer):
             "currency",
             "phone_number",
             "status",
+            "merchant_request_id",
+            "checkout_request_id",
             "mpesa_receipt",
             "created_at",
             "completed_at",

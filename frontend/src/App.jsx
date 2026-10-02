@@ -1,4 +1,5 @@
 import './App.css'
+import './styles/billing.css'
 
 import {
   Navigate,
@@ -32,6 +33,7 @@ import Suppliers from './pages/suppliers/Suppliers'
 import Deliveries from './pages/deliveries/Deliveries'
 import Reports from './pages/reports/Reports'
 import Settings from './pages/settings/Settings'
+import Billing from './pages/billing/Billing'
 
 function LandingPage() {
   return (
@@ -135,6 +137,11 @@ function App() {
         <Route
           path="/settings"
           element={<Settings />}
+        />
+
+        <Route
+          path="/billing"
+          element={<Billing />}
         />
       </Route>
 

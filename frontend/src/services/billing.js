@@ -6,9 +6,11 @@ export async function getPlans() {
   return response.data
 }
 
-export async function getCurrentSubscription() {
+export async function getCurrentSubscription(
+  businessId,
+) {
   const response = await api.get(
-    'billing/subscription/',
+    `businesses/${businessId}/subscription/`,
   )
 
   return response.data
