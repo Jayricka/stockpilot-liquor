@@ -20,6 +20,7 @@ from .serializers import (
     PlanSerializer,
     SubscriptionSerializer,
 )
+from .services.mpesa import MpesaGatewayError
 from .services.mpesa_callbacks import MpesaCallbackService
 from .services.payments import PaymentService
 
@@ -146,6 +147,21 @@ class BusinessPaymentListCreateView(
             currency=subscription.plan.currency,
         )
 
+        try:
+            payment = PaymentService.initiate_mpesa_payment(
+                payment=payment,
+            )
+        except ValueError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except MpesaGatewayError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
         response_serializer = PaymentSerializer(
             payment
         )
@@ -153,6 +169,29 @@ class BusinessPaymentListCreateView(
         return Response(
             response_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class BusinessPaymentDetailView(
+    generics.RetrieveAPIView,
+):
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        business = get_object_or_404(
+            Business,
+            id=self.kwargs["business_id"],
+            memberships__user=self.request.user,
+            memberships__is_active=True,
+        )
+
+        return get_object_or_404(
+            Payment.objects.select_related(
+                "subscription",
+            ),
+            id=self.kwargs["payment_id"],
+            subscription__business=business,
         )
 
 

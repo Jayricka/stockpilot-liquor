@@ -1,6 +1,11 @@
+from unittest.mock import patch
+
 from django.urls import reverse
 
+from rest_framework import status
+
 from billing.models import Payment, Subscription
+from billing.services.mpesa import MpesaGatewayError
 from billing.tests.base import BillingAPITestBase
 
 
@@ -14,7 +19,26 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             },
         )
 
-    def test_member_can_create_payment(self):
+    @patch(
+        "billing.services.payments.MpesaGateway"
+    )
+    def test_member_can_create_payment(
+        self,
+        gateway_class,
+    ):
+        gateway = gateway_class.return_value
+        gateway.stk_push.return_value = {
+            "merchant_request_id": (
+                "29115-34620561-1"
+            ),
+            "checkout_request_id": (
+                "ws_CO_123456789"
+            ),
+            "response_code": "0",
+            "response_description": "Success",
+            "customer_message": "Success",
+        }
+
         response = self.client.post(
             self.payment_url(),
             {
@@ -24,7 +48,10 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
 
         payment = Payment.objects.get(
             id=response.data["id"]
@@ -34,7 +61,10 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             payment.subscription,
             self.subscription,
         )
-        self.assertEqual(payment.amount, 1500)
+        self.assertEqual(
+            payment.amount,
+            1500,
+        )
         self.assertEqual(
             payment.currency,
             self.plan.currency,
@@ -47,8 +77,59 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             payment.status,
             Payment.Status.PENDING,
         )
+        self.assertEqual(
+            payment.merchant_request_id,
+            "29115-34620561-1",
+        )
+        self.assertEqual(
+            payment.checkout_request_id,
+            "ws_CO_123456789",
+        )
 
-    def test_payment_creation_rejects_zero_amount(self):
+        gateway.stk_push.assert_called_once_with(
+            payment
+        )
+
+    @patch(
+        "billing.services.payments.MpesaGateway"
+    )
+    def test_payment_creation_handles_mpesa_failure(
+        self,
+        gateway_class,
+    ):
+        gateway = gateway_class.return_value
+        gateway.stk_push.side_effect = MpesaGatewayError(
+            "M-Pesa STK Push failed."
+        )
+
+        response = self.client.post(
+            self.payment_url(),
+            {
+                "amount": 1500,
+                "phone_number": "0712345678",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_502_BAD_GATEWAY,
+        )
+        self.assertEqual(
+            response.data["detail"],
+            "M-Pesa STK Push failed.",
+        )
+
+        payment = Payment.objects.latest("id")
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.PENDING,
+        )
+
+    def test_payment_creation_rejects_zero_amount(
+        self,
+    ):
         response = self.client.post(
             self.payment_url(),
             {
@@ -58,10 +139,18 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("amount", response.data)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn(
+            "amount",
+            response.data,
+        )
 
-    def test_payment_creation_rejects_missing_amount(self):
+    def test_payment_creation_rejects_missing_amount(
+        self,
+    ):
         response = self.client.post(
             self.payment_url(),
             {
@@ -70,8 +159,14 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("amount", response.data)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn(
+            "amount",
+            response.data,
+        )
 
     def test_payment_creation_rejects_blank_phone_number(
         self,
@@ -85,8 +180,14 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("phone_number", response.data)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn(
+            "phone_number",
+            response.data,
+        )
 
     def test_payment_creation_rejects_cancelled_subscription(
         self,
@@ -107,7 +208,10 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
         self.assertEqual(
             response.data["detail"],
             (
@@ -135,15 +239,20 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
     def test_payment_creation_rejects_other_business(
         self,
     ):
-        other_business = self.business.__class__.objects.create(
-            name="Other Liquor Store",
-            business_type="liquor_store",
-            phone="0798765432",
+        other_business = (
+            self.business.__class__.objects.create(
+                name="Other Liquor Store",
+                business_type="liquor_store",
+                phone="0798765432",
+            )
         )
 
         url = reverse(
@@ -162,10 +271,17 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
 
-    def test_payment_creation_requires_authentication(self):
-        self.client.force_authenticate(user=None)
+    def test_payment_creation_requires_authentication(
+        self,
+    ):
+        self.client.force_authenticate(
+            user=None
+        )
 
         response = self.client.post(
             self.payment_url(),
@@ -176,11 +292,24 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
 
+    @patch(
+        "billing.services.payments.MpesaGateway"
+    )
     def test_payment_creation_does_not_accept_status(
         self,
+        gateway_class,
     ):
+        gateway = gateway_class.return_value
+        gateway.stk_push.return_value = {
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
+        }
+
         response = self.client.post(
             self.payment_url(),
             {
@@ -191,15 +320,28 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
         self.assertEqual(
             response.data["status"],
             Payment.Status.PENDING,
         )
 
+    @patch(
+        "billing.services.payments.MpesaGateway"
+    )
     def test_payment_creation_does_not_accept_receipt(
         self,
+        gateway_class,
     ):
+        gateway = gateway_class.return_value
+        gateway.stk_push.return_value = {
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
+        }
+
         response = self.client.post(
             self.payment_url(),
             {
@@ -210,7 +352,10 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
         self.assertEqual(
             response.data["status"],
             Payment.Status.PENDING,
@@ -220,9 +365,19 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             "",
         )
 
+    @patch(
+        "billing.services.payments.MpesaGateway"
+    )
     def test_payment_creation_preserves_subscription(
         self,
+        gateway_class,
     ):
+        gateway = gateway_class.return_value
+        gateway.stk_push.return_value = {
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
+        }
+
         original_status = self.subscription.status
 
         self.client.post(
