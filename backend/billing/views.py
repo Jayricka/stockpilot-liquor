@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from businesses.models import Business
 
@@ -19,6 +20,7 @@ from .serializers import (
     PlanSerializer,
     SubscriptionSerializer,
 )
+from .services.mpesa_callbacks import MpesaCallbackService
 from .services.payments import PaymentService
 
 
@@ -151,4 +153,24 @@ class BusinessPaymentListCreateView(
         return Response(
             response_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class MpesaCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            MpesaCallbackService.process_callback(
+                request.data
+            )
+        except ValueError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"ResultCode": 0},
+            status=status.HTTP_200_OK,
         )
