@@ -36,9 +36,6 @@ class PlanEntitlementSerializer(
 class PaymentCreateSerializer(
     serializers.Serializer
 ):
-    amount = serializers.IntegerField(
-        min_value=1,
-    )
     phone_number = serializers.CharField(
         max_length=20,
     )
@@ -64,8 +61,6 @@ class PaymentSerializer(serializers.ModelSerializer):
             "currency",
             "phone_number",
             "status",
-            "merchant_request_id",
-            "checkout_request_id",
             "mpesa_receipt",
             "created_at",
             "completed_at",

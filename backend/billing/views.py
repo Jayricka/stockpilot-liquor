@@ -140,11 +140,9 @@ class BusinessPaymentListCreateView(
 
         payment = PaymentService.create_payment(
             subscription=subscription,
-            amount=serializer.validated_data["amount"],
             phone_number=serializer.validated_data[
                 "phone_number"
             ],
-            currency=subscription.plan.currency,
         )
 
         try:

@@ -15,3 +15,15 @@ export async function getCurrentSubscription(
 
   return response.data
 }
+
+export async function createPayment(
+  businessId,
+  paymentData,
+) {
+  const response = await api.post(
+    `businesses/${businessId}/payments/`,
+    paymentData,
+  )
+
+  return response.data
+}

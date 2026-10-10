@@ -38,6 +38,7 @@ class BusinessDetailView(
 ):
     serializer_class = BusinessSerializer
     permission_classes = [IsAuthenticated]
+    lookup_url_kwarg = "business_id"
 
     def get_queryset(self):
         return (

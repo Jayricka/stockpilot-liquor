@@ -6,7 +6,7 @@ import {
 const plans = [
   {
     name: 'Starter',
-    price: '999',
+    price: '1,499',
     description:
       'For small liquor businesses ready to move beyond manual stock tracking.',
     features: [
@@ -25,7 +25,7 @@ const plans = [
   },
   {
     name: 'Growth',
-    price: '1,999',
+    price: '2,499',
     description:
       'For growing liquor businesses that need stronger team and operational control.',
     features: [

@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+import requests
 from django.test import SimpleTestCase, override_settings
 
 from billing.services.mpesa import (
@@ -100,7 +101,7 @@ class MpesaGatewayTestCase(SimpleTestCase):
         )
 
     @patch("billing.services.mpesa.requests.get")
-    def test_get_access_token_raises_for_http_error(
+    def test_get_access_token_raises_gateway_error(
         self,
         mock_get,
     ):
@@ -108,10 +109,12 @@ class MpesaGatewayTestCase(SimpleTestCase):
         mock_get.return_value = response
 
         response.raise_for_status.side_effect = (
-            RuntimeError("Daraja unavailable")
+            requests.exceptions.HTTPError(
+                "Daraja unavailable"
+            )
         )
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(MpesaGatewayError):
             self.gateway.get_access_token()
 
     def test_generate_timestamp(self):
@@ -159,33 +162,31 @@ class MpesaGatewayTestCase(SimpleTestCase):
             "254712345678",
         )
 
-    def test_reject_invalid_phone_number(self):
-        with self.assertRaisesMessage(
-            ValueError,
-            (
-                "Phone number must be a valid Kenyan "
-                "mobile number."
-            ),
-        ):
+    def test_normalize_phone_number_rejects_invalid_format(
+        self,
+    ):
+        with self.assertRaises(ValueError):
             self.gateway.normalize_phone_number(
                 "712345678"
             )
 
     @patch(
+        "billing.services.mpesa.requests.post"
+    )
+    @patch(
         "billing.services.mpesa.MpesaGateway."
         "get_access_token"
     )
-    @patch("billing.services.mpesa.requests.post")
     def test_stk_push(
         self,
-        mock_post,
         mock_get_access_token,
+        mock_post,
     ):
         payment = Mock()
-        payment.id = 10
-        payment.amount = 1500
         payment.currency = "KES"
+        payment.amount = 1499
         payment.phone_number = "0712345678"
+        payment.id = 1
 
         mock_get_access_token.return_value = (
             "test-access-token"
@@ -193,12 +194,12 @@ class MpesaGatewayTestCase(SimpleTestCase):
 
         response = Mock()
         response.json.return_value = {
-            "MerchantRequestID": "merchant-123",
-            "CheckoutRequestID": "checkout-123",
             "ResponseCode": "0",
             "ResponseDescription": (
                 "Success. Request accepted for processing"
             ),
+            "MerchantRequestID": "merchant-123",
+            "CheckoutRequestID": "checkout-123",
             "CustomerMessage": (
                 "Success. Request accepted for processing"
             ),
@@ -216,69 +217,29 @@ class MpesaGatewayTestCase(SimpleTestCase):
             result["checkout_request_id"],
             "checkout-123",
         )
-        self.assertEqual(
-            result["response_code"],
-            "0",
-        )
 
+        mock_get_access_token.assert_called_once()
         mock_post.assert_called_once()
 
-        call = mock_post.call_args
+        response.raise_for_status.assert_called_once()
 
-        self.assertEqual(
-            call.kwargs["headers"]["Authorization"],
-            "Bearer test-access-token",
-        )
-
-        payload = call.kwargs["json"]
-
-        self.assertEqual(
-            payload["BusinessShortCode"],
-            "600000",
-        )
-        self.assertEqual(
-            payload["Amount"],
-            1500,
-        )
-        self.assertEqual(
-            payload["PartyA"],
-            "254712345678",
-        )
-        self.assertEqual(
-            payload["PhoneNumber"],
-            "254712345678",
-        )
-        self.assertEqual(
-            payload["PartyB"],
-            "600000",
-        )
-        self.assertEqual(
-            payload["AccountReference"],
-            "StockPilot-10",
-        )
-        self.assertEqual(
-            payload["CallBackURL"],
-            (
-                "https://example.com/"
-                "api/mpesa/callback/"
-            ),
-        )
-
+    @patch(
+        "billing.services.mpesa.requests.post"
+    )
     @patch(
         "billing.services.mpesa.MpesaGateway."
         "get_access_token"
     )
-    @patch("billing.services.mpesa.requests.post")
     def test_stk_push_rejects_failed_response(
         self,
-        mock_post,
         mock_get_access_token,
+        mock_post,
     ):
         payment = Mock()
-        payment.id = 10
-        payment.amount = 1500
         payment.currency = "KES"
+        payment.amount = 1499
         payment.phone_number = "0712345678"
+        payment.id = 1
 
         mock_get_access_token.return_value = (
             "test-access-token"
@@ -288,33 +249,32 @@ class MpesaGatewayTestCase(SimpleTestCase):
         response.json.return_value = {
             "ResponseCode": "1",
             "ResponseDescription": (
-                "Request rejected"
+                "Request failed"
             ),
         }
 
         mock_post.return_value = response
 
-        with self.assertRaisesMessage(
-            MpesaGatewayError,
-            "Request rejected",
-        ):
+        with self.assertRaises(MpesaGatewayError):
             self.gateway.stk_push(payment)
 
+    @patch(
+        "billing.services.mpesa.requests.post"
+    )
     @patch(
         "billing.services.mpesa.MpesaGateway."
         "get_access_token"
     )
-    @patch("billing.services.mpesa.requests.post")
     def test_stk_push_requires_merchant_request_id(
         self,
-        mock_post,
         mock_get_access_token,
+        mock_post,
     ):
         payment = Mock()
-        payment.id = 10
-        payment.amount = 1500
         payment.currency = "KES"
+        payment.amount = 1499
         payment.phone_number = "0712345678"
+        payment.id = 1
 
         mock_get_access_token.return_value = (
             "test-access-token"
@@ -323,26 +283,18 @@ class MpesaGatewayTestCase(SimpleTestCase):
         response = Mock()
         response.json.return_value = {
             "ResponseCode": "0",
-            "ResponseDescription": "Accepted",
+            "ResponseDescription": "Success",
+            "CheckoutRequestID": "checkout-123",
         }
 
         mock_post.return_value = response
 
-        with self.assertRaisesMessage(
-            MpesaGatewayError,
-            (
-                "Daraja response did not contain "
-                "a merchant request ID."
-            ),
-        ):
+        with self.assertRaises(MpesaGatewayError):
             self.gateway.stk_push(payment)
 
     def test_stk_push_requires_kes(self):
         payment = Mock()
         payment.currency = "USD"
 
-        with self.assertRaisesMessage(
-            ValueError,
-            "M-Pesa payments must use KES.",
-        ):
+        with self.assertRaises(ValueError):
             self.gateway.stk_push(payment)

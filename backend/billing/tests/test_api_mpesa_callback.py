@@ -27,7 +27,6 @@ class MpesaCallbackAPITestCase(APITestCase):
 
         self.payment = PaymentService.create_payment(
             subscription=self.subscription,
-            amount=1500,
             phone_number="0712345678",
         )
 

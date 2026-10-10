@@ -11,14 +11,12 @@ class PaymentService:
     @transaction.atomic
     def create_payment(
         subscription,
-        amount,
         phone_number,
-        currency="KES",
     ):
         return Payment.objects.create(
             subscription=subscription,
-            amount=amount,
-            currency=currency,
+            amount=subscription.plan.price,
+            currency=subscription.plan.currency,
             phone_number=phone_number,
             status=Payment.Status.PENDING,
         )
@@ -96,8 +94,7 @@ class PaymentService:
     ):
         if payment.status != Payment.Status.PENDING:
             raise ValueError(
-                "Only pending payments can be marked "
-                "failed."
+                "Only pending payments can be marked failed."
             )
 
         payment.status = Payment.Status.FAILED
@@ -110,46 +107,6 @@ class PaymentService:
                 "status",
                 "result_code",
                 "result_description",
-                "completed_at",
-            ]
-        )
-
-        return payment
-
-    @staticmethod
-    @transaction.atomic
-    def cancel(payment):
-        if payment.status != Payment.Status.PENDING:
-            raise ValueError(
-                "Only pending payments can be cancelled."
-            )
-
-        payment.status = Payment.Status.CANCELLED
-        payment.completed_at = timezone.now()
-
-        payment.save(
-            update_fields=[
-                "status",
-                "completed_at",
-            ]
-        )
-
-        return payment
-
-    @staticmethod
-    @transaction.atomic
-    def expire(payment):
-        if payment.status != Payment.Status.PENDING:
-            raise ValueError(
-                "Only pending payments can be expired."
-            )
-
-        payment.status = Payment.Status.EXPIRED
-        payment.completed_at = timezone.now()
-
-        payment.save(
-            update_fields=[
-                "status",
                 "completed_at",
             ]
         )

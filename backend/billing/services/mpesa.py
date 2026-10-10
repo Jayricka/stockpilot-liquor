@@ -51,23 +51,28 @@ class MpesaGateway:
             credentials.encode()
         ).decode()
 
-        response = requests.get(
-            (
-                f"{self.base_url}"
-                "/oauth/v1/generate"
-            ),
-            params={
-                "grant_type": "client_credentials",
-            },
-            headers={
-                "Authorization": (
-                    f"Basic {encoded_credentials}"
+        try:
+            response = requests.get(
+                (
+                    f"{self.base_url}"
+                    "/oauth/v1/generate"
                 ),
-            },
-            timeout=30,
-        )
+                params={
+                    "grant_type": "client_credentials",
+                },
+                headers={
+                    "Authorization": (
+                        f"Basic {encoded_credentials}"
+                    ),
+                },
+                timeout=30,
+            )
 
-        response.raise_for_status()
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise MpesaGatewayError(
+                "Unable to authenticate with Daraja."
+            ) from exc
 
         data = response.json()
 
@@ -148,22 +153,27 @@ class MpesaGateway:
             ),
         }
 
-        response = requests.post(
-            (
-                f"{self.base_url}"
-                "/mpesa/stkpush/v1/processrequest"
-            ),
-            json=payload,
-            headers={
-                "Authorization": (
-                    f"Bearer {access_token}"
+        try:
+            response = requests.post(
+                (
+                    f"{self.base_url}"
+                    "/mpesa/stkpush/v1/processrequest"
                 ),
-                "Content-Type": "application/json",
-            },
-            timeout=30,
-        )
+                json=payload,
+                headers={
+                    "Authorization": (
+                        f"Bearer {access_token}"
+                    ),
+                    "Content-Type": "application/json",
+                },
+                timeout=30,
+            )
 
-        response.raise_for_status()
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise MpesaGatewayError(
+                "Unable to communicate with Daraja."
+            ) from exc
 
         data = response.json()
 

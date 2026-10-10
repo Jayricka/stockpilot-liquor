@@ -2,6 +2,7 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Package,
@@ -56,6 +57,11 @@ const navigation = [
     path: '/reports',
     icon: BarChart3,
   },
+  {
+    label: 'Billing',
+    path: '/billing',
+    icon: CreditCard,
+  },
 ]
 
 function Sidebar() {
@@ -101,7 +107,9 @@ function Sidebar() {
 
       <div className="sidebar-bottom">
         <NavLink
-          className="sidebar-link"
+          className={({ isActive }) =>
+            `sidebar-link ${isActive ? 'is-active' : ''}`
+          }
           to="/settings"
         >
           <Settings size={17} />

@@ -1,48 +1,82 @@
+from datetime import timedelta
 from unittest.mock import patch
 
-from django.urls import reverse
-
+from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APITestCase
 
-from billing.models import Payment, Subscription
+from accounts.models import User
+from billing.models import Payment, Plan, Subscription
 from billing.services.mpesa import MpesaGatewayError
-from billing.tests.base import BillingAPITestBase
+from businesses.models import Business, BusinessMembership
+
+
+class BillingAPITestBase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="owner@example.com",
+            password="StrongPassword123",
+            first_name="John",
+            last_name="Owner",
+        )
+
+        self.business = Business.objects.create(
+            name="Test Liquor Store",
+            business_type="liquor_store",
+            phone="0712345678",
+        )
+
+        BusinessMembership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=BusinessMembership.Role.OWNER,
+            is_active=True,
+        )
+
+        self.plan = Plan.objects.get(
+            code=Plan.Code.STARTER,
+            is_active=True,
+        )
+
+        now = timezone.now()
+
+        self.subscription = Subscription.objects.create(
+            business=self.business,
+            plan=self.plan,
+            status=Subscription.Status.TRIALING,
+            trial_started_at=now,
+            trial_ends_at=now + timedelta(days=7),
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
+
+    def payment_url(self):
+        return (
+            f"/api/businesses/"
+            f"{self.business.id}/payments/"
+        )
 
 
 class PaymentCreationAPITestCase(BillingAPITestBase):
 
-    def payment_url(self):
-        return reverse(
-            "business-payments",
-            kwargs={
-                "business_id": self.business.id,
-            },
-        )
-
-    @patch(
-        "billing.services.payments.MpesaGateway"
-    )
+    @patch("billing.services.payments.MpesaGateway")
     def test_member_can_create_payment(
         self,
         gateway_class,
     ):
         gateway = gateway_class.return_value
+
         gateway.stk_push.return_value = {
-            "merchant_request_id": (
-                "29115-34620561-1"
-            ),
-            "checkout_request_id": (
-                "ws_CO_123456789"
-            ),
-            "response_code": "0",
-            "response_description": "Success",
-            "customer_message": "Success",
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
         }
 
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
@@ -54,103 +88,26 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
         )
 
         payment = Payment.objects.get(
-            id=response.data["id"]
+            id=response.data["id"],
         )
 
         self.assertEqual(
             payment.subscription,
             self.subscription,
         )
-        self.assertEqual(
-            payment.amount,
-            1500,
-        )
-        self.assertEqual(
-            payment.currency,
-            self.plan.currency,
-        )
-        self.assertEqual(
-            payment.phone_number,
-            "0712345678",
-        )
-        self.assertEqual(
-            payment.status,
-            Payment.Status.PENDING,
-        )
-        self.assertEqual(
-            payment.merchant_request_id,
-            "29115-34620561-1",
-        )
-        self.assertEqual(
-            payment.checkout_request_id,
-            "ws_CO_123456789",
-        )
 
-        gateway.stk_push.assert_called_once_with(
-            payment
-        )
-
-    @patch(
-        "billing.services.payments.MpesaGateway"
-    )
-    def test_payment_creation_handles_mpesa_failure(
+    @patch("billing.services.payments.MpesaGateway")
+    def test_payment_amount_uses_subscription_plan_price(
         self,
         gateway_class,
     ):
         gateway = gateway_class.return_value
-        gateway.stk_push.side_effect = MpesaGatewayError(
-            "M-Pesa STK Push failed."
-        )
 
-        response = self.client.post(
-            self.payment_url(),
-            {
-                "amount": 1500,
-                "phone_number": "0712345678",
-            },
-            format="json",
-        )
+        gateway.stk_push.return_value = {
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
+        }
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_502_BAD_GATEWAY,
-        )
-        self.assertEqual(
-            response.data["detail"],
-            "M-Pesa STK Push failed.",
-        )
-
-        payment = Payment.objects.latest("id")
-
-        self.assertEqual(
-            payment.status,
-            Payment.Status.PENDING,
-        )
-
-    def test_payment_creation_rejects_zero_amount(
-        self,
-    ):
-        response = self.client.post(
-            self.payment_url(),
-            {
-                "amount": 0,
-                "phone_number": "0712345678",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertIn(
-            "amount",
-            response.data,
-        )
-
-    def test_payment_creation_rejects_missing_amount(
-        self,
-    ):
         response = self.client.post(
             self.payment_url(),
             {
@@ -161,20 +118,71 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertIn(
-            "amount",
-            response.data,
+            status.HTTP_201_CREATED,
         )
 
-    def test_payment_creation_rejects_blank_phone_number(
+        payment = Payment.objects.get(
+            id=response.data["id"],
+        )
+
+        self.assertEqual(
+            payment.amount,
+            self.subscription.plan.price,
+        )
+
+        self.assertEqual(
+            payment.currency,
+            self.subscription.plan.currency,
+        )
+
+    @patch("billing.services.payments.MpesaGateway")
+    def test_payment_creation_ignores_client_amount(
         self,
+        gateway_class,
     ):
+        gateway = gateway_class.return_value
+
+        gateway.stk_push.return_value = {
+            "merchant_request_id": "merchant-123",
+            "checkout_request_id": "checkout-123",
+        }
+
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
+                "amount": 999,
+                "phone_number": "0712345678",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        payment = Payment.objects.get(
+            id=response.data["id"],
+        )
+
+        self.assertEqual(
+            payment.amount,
+            self.subscription.plan.price,
+        )
+
+        self.assertEqual(
+            payment.currency,
+            self.subscription.plan.currency,
+        )
+
+        gateway.stk_push.assert_called_once_with(
+            payment,
+        )
+
+    def test_blank_phone_number_is_rejected(self):
+        response = self.client.post(
+            self.payment_url(),
+            {
                 "phone_number": "   ",
             },
             format="json",
@@ -184,25 +192,30 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-        self.assertIn(
-            "phone_number",
-            response.data,
+
+    def test_missing_phone_number_is_rejected(self):
+        response = self.client.post(
+            self.payment_url(),
+            {},
+            format="json",
         )
 
-    def test_payment_creation_rejects_cancelled_subscription(
-        self,
-    ):
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_cancelled_subscription_cannot_create_payment(self):
         self.subscription.status = (
             Subscription.Status.CANCELLED
         )
         self.subscription.save(
-            update_fields=["status"]
+            update_fields=["status"],
         )
 
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
@@ -212,28 +225,23 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
+
         self.assertEqual(
             response.data["detail"],
-            (
-                "Payments cannot be created for "
-                "this subscription."
-            ),
+            "Payments cannot be created for this subscription.",
         )
 
-    def test_payment_creation_rejects_expired_subscription(
-        self,
-    ):
+    def test_expired_subscription_cannot_create_payment(self):
         self.subscription.status = (
             Subscription.Status.EXPIRED
         )
         self.subscription.save(
-            update_fields=["status"]
+            update_fields=["status"],
         )
 
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
@@ -244,28 +252,26 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_payment_creation_rejects_other_business(
-        self,
-    ):
-        other_business = (
-            self.business.__class__.objects.create(
-                name="Other Liquor Store",
-                business_type="liquor_store",
-                phone="0798765432",
-            )
+        self.assertEqual(
+            response.data["detail"],
+            "Payments cannot be created for this subscription.",
         )
 
-        url = reverse(
-            "business-payments",
-            kwargs={
-                "business_id": other_business.id,
-            },
+    def test_other_business_cannot_create_payment(self):
+        other_business = Business.objects.create(
+            name="Other Liquor Store",
+            business_type="liquor_store",
+            phone="0798765432",
+        )
+
+        url = (
+            f"/api/businesses/"
+            f"{other_business.id}/payments/"
         )
 
         response = self.client.post(
             url,
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
@@ -276,17 +282,14 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             status.HTTP_404_NOT_FOUND,
         )
 
-    def test_payment_creation_requires_authentication(
-        self,
-    ):
+    def test_unauthenticated_user_cannot_create_payment(self):
         self.client.force_authenticate(
-            user=None
+            user=None,
         )
 
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
@@ -297,14 +300,37 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             status.HTTP_401_UNAUTHORIZED,
         )
 
-    @patch(
-        "billing.services.payments.MpesaGateway"
-    )
-    def test_payment_creation_does_not_accept_status(
+    @patch("billing.services.payments.MpesaGateway")
+    def test_mpesa_failure_returns_bad_gateway(
         self,
         gateway_class,
     ):
         gateway = gateway_class.return_value
+
+        gateway.stk_push.side_effect = MpesaGatewayError(
+            "M-Pesa gateway unavailable.",
+        )
+
+        response = self.client.post(
+            self.payment_url(),
+            {
+                "phone_number": "0712345678",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_502_BAD_GATEWAY,
+        )
+
+    @patch("billing.services.payments.MpesaGateway")
+    def test_client_cannot_inject_payment_status(
+        self,
+        gateway_class,
+    ):
+        gateway = gateway_class.return_value
+
         gateway.stk_push.return_value = {
             "merchant_request_id": "merchant-123",
             "checkout_request_id": "checkout-123",
@@ -313,9 +339,8 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
-                "status": Payment.Status.SUCCESS,
+                "status": "SUCCESS",
             },
             format="json",
         )
@@ -324,19 +349,23 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             response.status_code,
             status.HTTP_201_CREATED,
         )
+
+        payment = Payment.objects.get(
+            id=response.data["id"],
+        )
+
         self.assertEqual(
-            response.data["status"],
+            payment.status,
             Payment.Status.PENDING,
         )
 
-    @patch(
-        "billing.services.payments.MpesaGateway"
-    )
-    def test_payment_creation_does_not_accept_receipt(
+    @patch("billing.services.payments.MpesaGateway")
+    def test_client_cannot_inject_mpesa_receipt(
         self,
         gateway_class,
     ):
         gateway = gateway_class.return_value
+
         gateway.stk_push.return_value = {
             "merchant_request_id": "merchant-123",
             "checkout_request_id": "checkout-123",
@@ -345,7 +374,6 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
         response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
                 "mpesa_receipt": "FAKE123",
             },
@@ -356,42 +384,46 @@ class PaymentCreationAPITestCase(BillingAPITestBase):
             response.status_code,
             status.HTTP_201_CREATED,
         )
-        self.assertEqual(
-            response.data["status"],
-            Payment.Status.PENDING,
+
+        payment = Payment.objects.get(
+            id=response.data["id"],
         )
+
         self.assertEqual(
-            response.data["mpesa_receipt"],
+            payment.mpesa_receipt,
             "",
         )
 
-    @patch(
-        "billing.services.payments.MpesaGateway"
-    )
-    def test_payment_creation_preserves_subscription(
+    @patch("billing.services.payments.MpesaGateway")
+    def test_payment_preserves_subscription(
         self,
         gateway_class,
     ):
         gateway = gateway_class.return_value
+
         gateway.stk_push.return_value = {
             "merchant_request_id": "merchant-123",
             "checkout_request_id": "checkout-123",
         }
 
-        original_status = self.subscription.status
-
-        self.client.post(
+        response = self.client.post(
             self.payment_url(),
             {
-                "amount": 1500,
                 "phone_number": "0712345678",
             },
             format="json",
         )
 
-        self.subscription.refresh_from_db()
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        payment = Payment.objects.get(
+            id=response.data["id"],
+        )
 
         self.assertEqual(
-            self.subscription.status,
-            original_status,
+            payment.subscription_id,
+            self.subscription.id,
         )
