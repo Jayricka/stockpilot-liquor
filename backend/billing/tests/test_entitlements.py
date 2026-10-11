@@ -72,10 +72,10 @@ class EntitlementServiceTests(BillingAPITestBase):
             )
         )
 
-    def test_growth_does_not_have_advanced_reports(self):
+    def test_growth_has_advanced_reports(self):
         self.create_subscription(self.growth)
 
-        self.assertFalse(
+        self.assertTrue(
             EntitlementService.has_feature(
                 self.business,
                 PlanEntitlement.Feature.ADVANCED_REPORTS,

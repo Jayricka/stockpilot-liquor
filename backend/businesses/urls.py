@@ -11,6 +11,7 @@ from .onboarding_views import BusinessOnboardingView
 from .views import (
     BusinessDetailView,
     BusinessListCreateView,
+    BusinessMemberDetailView,
     BusinessMemberListView,
 )
 
@@ -35,6 +36,11 @@ urlpatterns = [
         "<int:business_id>/members/",
         BusinessMemberListView.as_view(),
         name="business-members",
+    ),
+    path(
+        "<int:business_id>/members/<int:user_id>/",
+        BusinessMemberDetailView.as_view(),
+        name="business-member-detail",
     ),
     path(
         "<int:business_id>/subscription/",

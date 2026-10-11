@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -15,10 +14,7 @@ class Plan(models.Model):
         unique=True,
     )
 
-    name = models.CharField(
-        max_length=50,
-    )
-
+    name = models.CharField(max_length=50)
     price = models.PositiveIntegerField()
 
     currency = models.CharField(
@@ -30,17 +26,10 @@ class Plan(models.Model):
         default=7,
     )
 
-    is_active = models.BooleanField(
-        default=True,
-    )
+    is_active = models.BooleanField(default=True)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["price"]
@@ -51,13 +40,26 @@ class Plan(models.Model):
 
 class PlanEntitlement(models.Model):
     class Feature(models.TextChoices):
+        PRODUCTS = "products", "Products"
         INVENTORY = "inventory", "Inventory"
         SALES = "sales", "Sales"
         PURCHASES = "purchases", "Purchases"
         SUPPLIERS = "suppliers", "Suppliers"
         DELIVERIES = "deliveries", "Deliveries"
         REPORTS = "reports", "Reports"
-        ADVANCED_REPORTS = "advanced_reports", "Advanced reports"
+        ADVANCED_REPORTS = (
+            "advanced_reports",
+            "Advanced reports",
+        )
+        BUSINESS_ANALYTICS = (
+            "business_analytics",
+            "Business analytics",
+        )
+
+        MAX_USERS = "max_users", "Maximum users"
+        MAX_OWNERS = "max_owners", "Maximum owners"
+        MAX_MANAGERS = "max_managers", "Maximum managers"
+        MAX_STAFF = "max_staff", "Maximum staff"
 
     plan = models.ForeignKey(
         Plan,
@@ -75,13 +77,8 @@ class PlanEntitlement(models.Model):
         default="true",
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["plan", "feature"]
@@ -150,13 +147,8 @@ class Subscription(models.Model):
         blank=True,
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -202,9 +194,7 @@ class Payment(models.Model):
         default="KES",
     )
 
-    phone_number = models.CharField(
-        max_length=20,
-    )
+    phone_number = models.CharField(max_length=20)
 
     status = models.CharField(
         max_length=20,
@@ -232,13 +222,9 @@ class Payment(models.Model):
         blank=True,
     )
 
-    result_description = models.TextField(
-        blank=True,
-    )
+    result_description = models.TextField(blank=True)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     completed_at = models.DateTimeField(
         null=True,
