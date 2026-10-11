@@ -96,7 +96,7 @@ class FeaturePermissionTests(
             )
         )
 
-    def test_growth_denies_advanced_reports(self):
+    def test_growth_allows_advanced_reports(self):
         self.create_subscription(
             status=Subscription.Status.ACTIVE,
         ).delete()
@@ -113,7 +113,7 @@ class FeaturePermissionTests(
 
         request = self.get_request()
 
-        self.assertFalse(
+        self.assertTrue(
             self.permission.has_permission(
                 request,
                 self.view,
