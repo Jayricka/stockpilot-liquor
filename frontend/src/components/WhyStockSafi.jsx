@@ -1,6 +1,6 @@
-function WhyStockPilot() {
+function WhyStockSafi() {
   return (
-    <section className="section split-section" id="why-stockpilot">
+    <section className="section split-section" id="why-stocksafi">
       <div className="section-heading compact-heading">
         <div>
           <div className="section-label">
@@ -13,7 +13,7 @@ function WhyStockPilot() {
         </div>
 
         <p>
-          StockPilot is designed to help business owners spend less
+          StockSafi is designed to help business owners spend less
           time searching through records and more time understanding
           what is happening in their stores.
         </p>
@@ -55,4 +55,4 @@ function Benefit({ number, title, description }) {
   )
 }
 
-export default WhyStockPilot
+export default WhyStockSafi

@@ -15,7 +15,7 @@ function DemoWorkspaceHeader() {
         </span>
 
         <div>
-          <strong>StockPilot</strong>
+          <strong>StockSafi</strong>
           <span>
             Interactive workspace
           </span>

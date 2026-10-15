@@ -11,7 +11,7 @@ import {
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Features from './components/Features'
-import WhyStockPilot from './components/WhyStockPilot'
+import WhyStockSafi from './components/WhyStockSafi'
 import HowItWorks from './components/HowItWorks'
 import Pricing from './components/Pricing'
 import FAQ from './components/FAQ'
@@ -46,8 +46,8 @@ function LandingPage() {
       <main>
         <Hero />
         <Features />
-        <WhyStockPilot />
         <HowItWorks />
+        <WhyStockSafi />
         <Pricing />
         <FAQ />
         <ContactCTA />

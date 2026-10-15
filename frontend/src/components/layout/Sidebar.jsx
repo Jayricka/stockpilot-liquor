@@ -75,7 +75,7 @@ function Sidebar() {
         </span>
 
         <span>
-          <strong>StockPilot</strong>
+          <strong>StockSafi</strong>
           <small>Business management</small>
         </span>
       </NavLink>

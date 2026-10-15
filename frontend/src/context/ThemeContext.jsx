@@ -12,7 +12,7 @@ const ThemeContext = createContext(null)
 
 function getInitialTheme() {
   const savedTheme = localStorage.getItem(
-    'stockpilot-theme',
+    'stocksafi-theme',
   )
 
   if (
@@ -38,7 +38,7 @@ export function ThemeProvider({ children }) {
     document.documentElement.dataset.theme = theme
 
     localStorage.setItem(
-      'stockpilot-theme',
+      'stocksafi-theme',
       theme,
     )
   }, [theme])

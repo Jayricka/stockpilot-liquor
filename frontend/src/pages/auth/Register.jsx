@@ -52,7 +52,7 @@ function Register() {
           </span>
 
           <span>
-            <strong>StockPilot</strong>
+            <strong>StockSafi</strong>
             <small>Liquor business management</small>
           </span>
         </Link>
@@ -65,7 +65,7 @@ function Register() {
           <h1>
             {isInvitationFlow
               ? 'Create your account.'
-              : 'Create your StockPilot account.'}
+              : 'Create your StockSafi account.'}
           </h1>
 
           <p>

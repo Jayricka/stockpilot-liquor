@@ -6,5 +6,5 @@ BACKEND_DIR="$PROJECT_ROOT/backend"
 
 cd "$BACKEND_DIR"
 
-echo "Starting StockPilot Liquor backend..."
+echo "Starting StockSafi Liquor backend..."
 python manage.py runserver

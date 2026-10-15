@@ -16,7 +16,7 @@ function ContactCTA() {
         </h2>
 
         <p>
-          Explore a working StockPilot workspace
+          Explore a working StockSafi workspace
           with no signup, payment, or setup required.
         </p>
       </div>

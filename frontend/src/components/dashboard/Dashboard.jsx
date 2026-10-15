@@ -100,7 +100,7 @@ function Dashboard() {
           <h2>No business found</h2>
           <p>
             Create a business to start using
-            StockPilot.
+            StockSafi.
           </p>
         </div>
       </section>

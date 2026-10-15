@@ -19,9 +19,9 @@ from billing.services.mpesa import (
         "https://example.com/api/mpesa/callback/"
     ),
     MPESA_TRANSACTION_TYPE="CustomerPayBillOnline",
-    MPESA_ACCOUNT_REFERENCE="StockPilot",
+    MPESA_ACCOUNT_REFERENCE="StockSafi",
     MPESA_TRANSACTION_DESCRIPTION=(
-        "StockPilot payment"
+        "StockSafi payment"
     ),
 )
 class MpesaGatewayTestCase(SimpleTestCase):

@@ -11,7 +11,7 @@ const AuthContext = createContext(null)
 
 function getStoredUser() {
   const storedUser = localStorage.getItem(
-    'stockpilot-user',
+    'stocksafi-user',
   )
 
   if (!storedUser) {
@@ -21,49 +21,49 @@ function getStoredUser() {
   try {
     return JSON.parse(storedUser)
   } catch {
-    localStorage.removeItem('stockpilot-user')
+    localStorage.removeItem('stocksafi-user')
     return null
   }
 }
 
 function clearSessionState() {
-  localStorage.removeItem('stockpilot-access')
-  localStorage.removeItem('stockpilot-refresh')
-  localStorage.removeItem('stockpilot-user')
+  localStorage.removeItem('stocksafi-access')
+  localStorage.removeItem('stocksafi-refresh')
+  localStorage.removeItem('stocksafi-user')
 
   sessionStorage.removeItem(
-    'stockpilot-business',
+    'stocksafi-business',
   )
 
   sessionStorage.removeItem(
-    'stockpilot-subscription',
+    'stocksafi-subscription',
   )
 }
 
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(
-    () => localStorage.getItem('stockpilot-access'),
+    () => localStorage.getItem('stocksafi-access'),
   )
 
   const [user, setUser] = useState(getStoredUser)
 
   function saveSession(tokens, userData = null) {
     sessionStorage.removeItem(
-      'stockpilot-business',
+      'stocksafi-business',
     )
 
     sessionStorage.removeItem(
-      'stockpilot-subscription',
+      'stocksafi-subscription',
     )
 
     localStorage.setItem(
-      'stockpilot-access',
+      'stocksafi-access',
       tokens.access,
     )
 
     if (tokens.refresh) {
       localStorage.setItem(
-        'stockpilot-refresh',
+        'stocksafi-refresh',
         tokens.refresh,
       )
     }
@@ -72,7 +72,7 @@ export function AuthProvider({ children }) {
 
     if (userData) {
       localStorage.setItem(
-        'stockpilot-user',
+        'stocksafi-user',
         JSON.stringify(userData),
       )
 

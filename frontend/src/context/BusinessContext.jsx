@@ -19,7 +19,7 @@ const BusinessContext = createContext(null)
 
 function getStoredSubscription() {
   const storedSubscription = sessionStorage.getItem(
-    'stockpilot-subscription',
+    'stocksafi-subscription',
   )
 
   if (!storedSubscription) return null
@@ -27,7 +27,7 @@ function getStoredSubscription() {
   try {
     return JSON.parse(storedSubscription)
   } catch {
-    sessionStorage.removeItem('stockpilot-subscription')
+    sessionStorage.removeItem('stocksafi-subscription')
     return null
   }
 }
@@ -87,16 +87,16 @@ export function BusinessProvider({ children }) {
           setSubscription(null)
           setLoadedUserKey(userKey)
 
-          sessionStorage.removeItem('stockpilot-business')
+          sessionStorage.removeItem('stocksafi-business')
           sessionStorage.removeItem(
-            'stockpilot-subscription',
+            'stocksafi-subscription',
           )
 
           return
         }
 
         sessionStorage.setItem(
-          'stockpilot-business',
+          'stocksafi-business',
           JSON.stringify(currentBusiness),
         )
 
@@ -109,7 +109,7 @@ export function BusinessProvider({ children }) {
           setSubscription(subscriptionData)
 
           sessionStorage.setItem(
-            'stockpilot-subscription',
+            'stocksafi-subscription',
             JSON.stringify(subscriptionData),
           )
         } catch {
@@ -129,9 +129,9 @@ export function BusinessProvider({ children }) {
         setSubscription(null)
         setLoadedUserKey('')
 
-        sessionStorage.removeItem('stockpilot-business')
+        sessionStorage.removeItem('stocksafi-business')
         sessionStorage.removeItem(
-          'stockpilot-subscription',
+          'stocksafi-subscription',
         )
 
         if (throwOnError) throw error
@@ -192,11 +192,11 @@ export function BusinessProvider({ children }) {
 
       if (selectedBusiness) {
         sessionStorage.setItem(
-          'stockpilot-business',
+          'stocksafi-business',
           JSON.stringify(selectedBusiness),
         )
       } else {
-        sessionStorage.removeItem('stockpilot-business')
+        sessionStorage.removeItem('stocksafi-business')
       }
     },
     [businesses],
@@ -224,7 +224,7 @@ export function BusinessProvider({ children }) {
     })
 
     sessionStorage.setItem(
-      'stockpilot-business',
+      'stocksafi-business',
       JSON.stringify(updatedBusiness),
     )
   }, [])
