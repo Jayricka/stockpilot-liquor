@@ -20,6 +20,13 @@ const emptyBusiness = {
   license_number: '',
 }
 
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.detail ||
+    fallback
+  )
+}
+
 export function useSettingsWorkspace({
   setError,
   setMessage,
@@ -59,20 +66,18 @@ export function useSettingsWorkspace({
 
         const profileData = await getProfile()
 
-        if (!active) {
-          return
+        if (active) {
+          setProfile(profileData)
         }
-
-        setProfile(profileData)
-      } catch (err) {
-        if (!active) {
-          return
+      } catch (error) {
+        if (active) {
+          setError(
+            getErrorMessage(
+              error,
+              'Unable to load settings.',
+            ),
+          )
         }
-
-        setError(
-          err.response?.data?.detail ||
-            'Unable to load settings.',
-        )
       } finally {
         if (active) {
           setLoading(false)
@@ -88,53 +93,65 @@ export function useSettingsWorkspace({
   }, [setError])
 
   useEffect(() => {
-    if (!businessId) {
-      return undefined
-    }
-
     let active = true
 
+    if (!businessId) {
+      return () => {
+        active = false
+      }
+    }
+
     async function loadBusinessSettings() {
+      let businessData
+
       try {
-        setError('')
-        setMessage('')
-
-        const [
-          businessData,
-          memberData,
-        ] = await Promise.all([
-          getBusiness(businessId),
-          getBusinessMembers(businessId),
-        ])
-
-        if (!active) {
-          return
-        }
-
-        setBusinessForm({
-          name: businessData.name || '',
-          business_type:
-            businessData.business_type || '',
-          phone: businessData.phone || '',
-          email: businessData.email || '',
-          address:
-            businessData.address || '',
-          license_number:
-            businessData.license_number || '',
-        })
-
-        setMembers(memberData)
-
-        updateBusiness(businessData)
-      } catch (err) {
-        if (!active) {
-          return
-        }
-
-        setError(
-          err.response?.data?.detail ||
-            'Unable to load business settings.',
+        businessData = await getBusiness(
+          businessId,
         )
+      } catch (error) {
+        if (active) {
+          setError(
+            getErrorMessage(
+              error,
+              'Unable to load business settings.',
+            ),
+          )
+        }
+
+        return
+      }
+
+      if (!active) {
+        return
+      }
+
+      setBusinessForm({
+        name: businessData.name || '',
+        business_type:
+          businessData.business_type || '',
+        phone: businessData.phone || '',
+        email: businessData.email || '',
+        address: businessData.address || '',
+        license_number:
+          businessData.license_number || '',
+      })
+
+      updateBusiness(businessData)
+
+      try {
+        const memberData =
+          await getBusinessMembers(businessId)
+
+        if (active) {
+          setMembers(memberData)
+        }
+      } catch {
+        if (active) {
+          setMembers([])
+          setError(
+            'Business settings loaded, but team members could not be loaded.',
+          )
+        }
       }
     }
 
@@ -146,15 +163,15 @@ export function useSettingsWorkspace({
   }, [
     businessId,
     setError,
-    setMessage,
     updateBusiness,
   ])
 
   function handleBusinessSelect(event) {
-    selectBusiness(event.target.value)
     setMembers([])
-    setBusinessForm(emptyBusiness)
+    setBusinessForm({ ...emptyBusiness })
+    setError('')
     setMessage('')
+    selectBusiness(event.target.value)
   }
 
   function handleBusinessChange(event) {
@@ -176,6 +193,7 @@ export function useSettingsWorkspace({
     setProfile,
     business,
     members,
+    setMembers,
     businessForm,
     setBusinessForm,
     loading:

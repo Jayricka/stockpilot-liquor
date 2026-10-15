@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { registerUser } from '../../../services/auth.js'
+import { getSafeNextPath } from '../../../utils/navigation.js'
 
 const validPlans = [
   'starter',
@@ -10,7 +11,10 @@ const validPlans = [
   'business',
 ]
 
-export function useRegisterForm(requestedPlan) {
+export function useRegisterForm(
+  requestedPlan,
+  requestedNext,
+) {
   const navigate = useNavigate()
   const { saveSession } = useAuth()
 
@@ -19,6 +23,8 @@ export function useRegisterForm(requestedPlan) {
   )
     ? requestedPlan
     : 'starter'
+
+  const nextPath = getSafeNextPath(requestedNext)
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -50,7 +56,6 @@ export function useRegisterForm(requestedPlan) {
 
   async function handleSubmit(event) {
     event.preventDefault()
-
     setError('')
 
     if (formData.password !== confirmPassword) {
@@ -73,7 +78,7 @@ export function useRegisterForm(requestedPlan) {
       saveSession(session, session.user)
 
       navigate(
-        `/onboarding?plan=${selectedPlan}`,
+        nextPath || `/onboarding?plan=${selectedPlan}`,
         { replace: true },
       )
     } catch (requestError) {

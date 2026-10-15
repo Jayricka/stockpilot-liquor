@@ -6,109 +6,91 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
 import { useAuth } from './AuthContext.jsx'
 
 import { getBusinesses } from '../services/dashboard'
-import {
-  getCurrentSubscription,
-} from '../services/billing'
+import { getCurrentSubscription } from '../services/billing'
 
 const BusinessContext = createContext(null)
 
 function getStoredSubscription() {
-  const storedSubscription =
-    sessionStorage.getItem(
-      'stockpilot-subscription',
-    )
+  const storedSubscription = sessionStorage.getItem(
+    'stockpilot-subscription',
+  )
 
-  if (!storedSubscription) {
-    return null
-  }
+  if (!storedSubscription) return null
 
   try {
     return JSON.parse(storedSubscription)
   } catch {
-    sessionStorage.removeItem(
-      'stockpilot-subscription',
-    )
-
+    sessionStorage.removeItem('stockpilot-subscription')
     return null
   }
 }
 
 export function BusinessProvider({ children }) {
-  const {
-    isAuthenticated,
-    user,
-  } = useAuth()
+  const { accessToken, isAuthenticated, user } = useAuth()
 
-  const [businesses, setBusinesses] =
-    useState([])
+  const [businesses, setBusinesses] = useState([])
+  const [business, setBusiness] = useState(null)
+  const [subscription, setSubscription] = useState(
+    getStoredSubscription,
+  )
+  const [loadedUserKey, setLoadedUserKey] = useState('')
+  const [loading, setLoading] = useState(isAuthenticated)
 
-  const [business, setBusiness] =
-    useState(null)
-
-  const [subscription, setSubscription] =
-    useState(getStoredSubscription)
-
-  const [loadedUserKey, setLoadedUserKey] =
-    useState('')
-
-  const [loading, setLoading] =
-    useState(isAuthenticated)
+  const requestIdRef = useRef(0)
+  const selectedBusinessIdRef = useRef(null)
 
   const userKey = isAuthenticated
-    ? String(user?.id || user?.email || '')
+    ? `${accessToken}:${user?.id || user?.email || ''}`
     : ''
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      sessionStorage.removeItem(
-        'stockpilot-business',
-      )
+  const loadBusinessData = useCallback(
+    async ({ throwOnError = false, initial = false } = {}) => {
+      const requestId = ++requestIdRef.current
+      const isCurrentRequest = () =>
+        requestId === requestIdRef.current
 
-      sessionStorage.removeItem(
-        'stockpilot-subscription',
-      )
-
-      return undefined
-    }
-
-    let mounted = true
-
-    async function loadBusinessData() {
-      try {
+      if (!initial) {
         setLoading(true)
+      }
 
-        const businessData =
-          await getBusinesses()
+      try {
+        const businessData = await getBusinesses()
 
-        if (!mounted) {
-          return
-        }
+        if (!isCurrentRequest()) return
 
-        setBusinesses(businessData)
+        const currentBusinessId =
+          selectedBusinessIdRef.current
 
         const currentBusiness =
-          businessData[0] || null
+          businessData.find(
+            (item) =>
+              Number(item.id) ===
+              Number(currentBusinessId),
+          ) ||
+          businessData[0] ||
+          null
 
+        selectedBusinessIdRef.current =
+          currentBusiness?.id ?? null
+
+        setBusinesses(businessData)
         setBusiness(currentBusiness)
 
         if (!currentBusiness) {
           setSubscription(null)
+          setLoadedUserKey(userKey)
 
-          sessionStorage.removeItem(
-            'stockpilot-business',
-          )
-
+          sessionStorage.removeItem('stockpilot-business')
           sessionStorage.removeItem(
             'stockpilot-subscription',
           )
-
-          setLoadedUserKey(userKey)
 
           return
         }
@@ -120,13 +102,9 @@ export function BusinessProvider({ children }) {
 
         try {
           const subscriptionData =
-            await getCurrentSubscription(
-              currentBusiness.id,
-            )
+            await getCurrentSubscription(currentBusiness.id)
 
-          if (!mounted) {
-            return
-          }
+          if (!isCurrentRequest()) return
 
           setSubscription(subscriptionData)
 
@@ -135,58 +113,80 @@ export function BusinessProvider({ children }) {
             JSON.stringify(subscriptionData),
           )
         } catch {
-          if (!mounted) {
-            return
-          }
+          if (!isCurrentRequest()) return
 
-          setSubscription(
-            getStoredSubscription(),
-          )
+          setSubscription(getStoredSubscription())
         }
 
         setLoadedUserKey(userKey)
-      } catch {
-        if (!mounted) {
-          return
-        }
+      } catch (error) {
+        if (!isCurrentRequest()) return
+
+        selectedBusinessIdRef.current = null
 
         setBusinesses([])
         setBusiness(null)
         setSubscription(null)
         setLoadedUserKey('')
 
-        sessionStorage.removeItem(
-          'stockpilot-business',
-        )
-
+        sessionStorage.removeItem('stockpilot-business')
         sessionStorage.removeItem(
           'stockpilot-subscription',
         )
+
+        if (throwOnError) throw error
       } finally {
-        if (mounted) {
+        if (isCurrentRequest()) {
           setLoading(false)
         }
       }
+    },
+    [userKey],
+  )
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      requestIdRef.current += 1
+      selectedBusinessIdRef.current = null
+      return undefined
     }
 
-    loadBusinessData()
+    let cancelled = false
+
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        return loadBusinessData({ initial: true })
+      }
+
+      return undefined
+    })
 
     return () => {
-      mounted = false
+      cancelled = true
+      requestIdRef.current += 1
     }
-  }, [
-    isAuthenticated,
-    userKey,
-  ])
+  }, [isAuthenticated, loadBusinessData])
+
+  const refreshBusinesses = useCallback(async () => {
+    if (!isAuthenticated) {
+      throw new Error(
+        'You must be signed in to refresh business access.',
+      )
+    }
+
+    await loadBusinessData({ throwOnError: true })
+  }, [isAuthenticated, loadBusinessData])
 
   const selectBusiness = useCallback(
     (businessId) => {
       const selectedBusiness =
         businesses.find(
           (item) =>
-            Number(item.id) ===
-            Number(businessId),
+            Number(item.id) === Number(businessId),
         ) || null
+
+      selectedBusinessIdRef.current =
+        selectedBusiness?.id ?? null
 
       setBusiness(selectedBusiness)
 
@@ -196,40 +196,38 @@ export function BusinessProvider({ children }) {
           JSON.stringify(selectedBusiness),
         )
       } else {
-        sessionStorage.removeItem(
-          'stockpilot-business',
-        )
+        sessionStorage.removeItem('stockpilot-business')
       }
     },
     [businesses],
   )
 
-  const updateBusiness = useCallback(
-    (updatedBusiness) => {
-      setBusinesses((current) =>
-        current.map((item) =>
-          Number(item.id) ===
-          Number(updatedBusiness.id)
-            ? updatedBusiness
-            : item,
-        ),
-      )
-
-      setBusiness((current) =>
-        current &&
-        Number(current.id) ===
-          Number(updatedBusiness.id)
+  const updateBusiness = useCallback((updatedBusiness) => {
+    setBusinesses((current) =>
+      current.map((item) =>
+        Number(item.id) === Number(updatedBusiness.id)
           ? updatedBusiness
-          : current,
-      )
+          : item,
+      ),
+    )
 
-      sessionStorage.setItem(
-        'stockpilot-business',
-        JSON.stringify(updatedBusiness),
-      )
-    },
-    [],
-  )
+    setBusiness((current) => {
+      if (
+        current &&
+        Number(current.id) === Number(updatedBusiness.id)
+      ) {
+        selectedBusinessIdRef.current = updatedBusiness.id
+        return updatedBusiness
+      }
+
+      return current
+    })
+
+    sessionStorage.setItem(
+      'stockpilot-business',
+      JSON.stringify(updatedBusiness),
+    )
+  }, [])
 
   const plan = subscription?.plan || null
 
@@ -238,56 +236,34 @@ export function BusinessProvider({ children }) {
     subscription?.trial_active === true
 
   const isSubscriptionActive =
-    subscription?.status === 'ACTIVE' ||
-    isTrialing
+    subscription?.status === 'ACTIVE' || isTrialing
 
   const trialDaysRemaining =
     subscription?.trial_days_remaining || 0
 
   const userDataReady =
-    isAuthenticated &&
-    loadedUserKey === userKey
+    isAuthenticated && loadedUserKey === userKey
 
   const value = useMemo(
     () => ({
-      businesses: userDataReady
-        ? businesses
-        : [],
-
-      business: userDataReady
-        ? business
-        : null,
-
+      businesses: userDataReady ? businesses : [],
+      business: userDataReady ? business : null,
       businessId: userDataReady
         ? business?.id || null
         : null,
-
-      subscription: userDataReady
-        ? subscription
-        : null,
-
-      plan: userDataReady
-        ? plan
-        : null,
-
-      isTrialing: userDataReady
-        ? isTrialing
+      subscription: userDataReady ? subscription : null,
+      plan: userDataReady ? plan : null,
+      isTrialing: userDataReady ? isTrialing : false,
+      isSubscriptionActive: userDataReady
+        ? isSubscriptionActive
         : false,
-
-      isSubscriptionActive:
-        userDataReady
-          ? isSubscriptionActive
-          : false,
-
-      trialDaysRemaining:
-        userDataReady
-          ? trialDaysRemaining
-          : 0,
-
+      trialDaysRemaining: userDataReady
+        ? trialDaysRemaining
+        : 0,
       loading: isAuthenticated
         ? loading || !userDataReady
         : false,
-
+      refreshBusinesses,
       selectBusiness,
       updateBusiness,
     }),
@@ -302,6 +278,7 @@ export function BusinessProvider({ children }) {
       trialDaysRemaining,
       loading,
       userDataReady,
+      refreshBusinesses,
       selectBusiness,
       updateBusiness,
     ],
@@ -319,7 +296,7 @@ export function useBusiness() {
 
   if (!context) {
     throw new Error(
-      'useBusiness must be used inside a BusinessProvider',
+      'useBusiness must be used within a BusinessProvider',
     )
   }
 

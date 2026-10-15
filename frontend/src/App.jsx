@@ -1,4 +1,5 @@
 import './App.css'
+import './styles/auth.css'
 import './styles/billing.css'
 
 import {
@@ -21,6 +22,8 @@ import AppLayout from './components/layout/AppLayout'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import AcceptInvitation from './pages/auth/AcceptInvitation'
+
 import BusinessOnboarding from './pages/onboarding/BusinessOnboarding'
 import Demo from './pages/demo/Demo'
 
@@ -58,13 +61,11 @@ function LandingPage() {
 function App() {
   return (
     <Routes>
-      {/* Public marketing */}
       <Route
         path="/"
         element={<LandingPage />}
       />
 
-      {/* Authentication */}
       <Route
         path="/login"
         element={<Login />}
@@ -75,13 +76,16 @@ function App() {
         element={<Register />}
       />
 
-      {/* Business onboarding */}
+      <Route
+        path="/invitations/accept"
+        element={<AcceptInvitation />}
+      />
+
       <Route
         path="/onboarding"
         element={<BusinessOnboarding />}
       />
 
-      {/* Anonymous demo */}
       <Route
         path="/demo"
         element={<Demo />}
@@ -92,7 +96,6 @@ function App() {
         element={<Demo />}
       />
 
-      {/* Authenticated application */}
       <Route element={<AppLayout />}>
         <Route
           path="/dashboard"
@@ -145,7 +148,6 @@ function App() {
         />
       </Route>
 
-      {/* Fallback */}
       <Route
         path="*"
         element={

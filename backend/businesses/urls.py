@@ -10,6 +10,9 @@ from billing.views import (
 from .onboarding_views import BusinessOnboardingView
 from .views import (
     BusinessDetailView,
+    BusinessInvitationAcceptView,
+    BusinessInvitationDetailView,
+    BusinessInvitationListCreateView,
     BusinessListCreateView,
     BusinessMemberDetailView,
     BusinessMemberListView,
@@ -36,6 +39,21 @@ urlpatterns = [
         "<int:business_id>/members/",
         BusinessMemberListView.as_view(),
         name="business-members",
+    ),
+    path(
+        "<int:business_id>/invitations/",
+        BusinessInvitationListCreateView.as_view(),
+        name="business-invitations",
+    ),
+    path(
+        "<int:business_id>/invitations/<int:invitation_id>/",
+        BusinessInvitationDetailView.as_view(),
+        name="business-invitation-detail",
+    ),
+    path(
+        "invitations/accept/",
+        BusinessInvitationAcceptView.as_view(),
+        name="accept-business-invitation",
     ),
     path(
         "<int:business_id>/members/<int:user_id>/",
