@@ -24,7 +24,7 @@ class DemoService:
     @transaction.atomic
     def create_session():
         demo_user = User.objects.create_user(
-            email=f"demo-{timezone.now().timestamp()}@stockpilot.demo",
+            email=f"demo-{timezone.now().timestamp()}@stocksafi.demo",
             password=None,
             first_name="Demo",
             last_name="User",
@@ -34,7 +34,7 @@ class DemoService:
             name="Nairobi Liquor Store",
             business_type="liquor_store",
             phone="+254 700 000 000",
-            email="demo@stockpilot.demo",
+            email="demo@stocksafi.demo",
             address="Nairobi, Kenya",
             license_number="DEMO-001",
         )
@@ -56,9 +56,9 @@ class DemoService:
 
         Supplier.objects.create(
             business=business,
-            name="StockPilot Demo Distributors",
+            name="StockSafi Demo Distributors",
             phone="+254 711 000 000",
-            email="supplier@stockpilot.demo",
+            email="supplier@stocksafi.demo",
             address="Nairobi, Kenya",
             notes="Demo supplier",
         )

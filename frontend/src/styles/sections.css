@@ -106,10 +106,6 @@
   line-height: 1.7;
 }
 
-.workflow-section {
-  padding-top: 80px;
-}
-
 .centered-heading {
   display: block;
   max-width: 700px;
@@ -120,36 +116,6 @@
 
 .centered-heading > p {
   margin: 17px auto 0;
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 13px;
-}
-
-.step-card {
-  position: relative;
-  min-height: 155px;
-  padding: 23px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-}
-
-.step-card span {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.step-card h3 {
-  max-width: 180px;
-  margin: 35px 0 0;
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.35;
-  letter-spacing: -0.02em;
 }
 
 /* =========================================

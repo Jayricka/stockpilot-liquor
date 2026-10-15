@@ -5,7 +5,7 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKEND="$PROJECT_ROOT/backend"
 
-echo "Setting up StockPilot Liquor..."
+echo "Setting up StockSafi Liquor..."
 
 cd "$BACKEND"
 

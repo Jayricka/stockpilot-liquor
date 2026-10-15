@@ -24,13 +24,13 @@ function Hero() {
         </h1>
 
         <p>
-          StockPilot brings inventory, sales, purchases, suppliers,
+          StockSafi brings inventory, sales, purchases, suppliers,
           deliveries, and business insights into one simple platform
           built for modern liquor-store owners.
         </p>
 
         <div className="hero-actions">
-          <a className="button button-primary" href="#/demo">
+          <a className="button button-primary" href="/register">
             Get started
             <ArrowRight size={17} />
           </a>

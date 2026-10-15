@@ -76,7 +76,7 @@ function Login() {
           </span>
 
           <span>
-            <strong>StockPilot</strong>
+            <strong>StockSafi</strong>
             <small>Liquor business management</small>
           </span>
         </Link>
@@ -165,7 +165,7 @@ function Login() {
         <p className="auth-footer">
           Need an account?{' '}
           <Link to={registerPath}>
-            {nextPath ? 'Create an account' : 'Contact StockPilot'}
+            {nextPath ? 'Create an account' : 'Contact StockSafi'}
           </Link>
         </p>
       </section>

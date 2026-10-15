@@ -1,6 +1,6 @@
-# StockPilot Liquor
+# StockSafi Liquor
 
-**StockPilot Liquor** is a modern inventory, sales, and business management platform designed for licensed liquor retailers in Kenya.
+**StockSafi Liquor** is a modern inventory, sales, and business management platform designed for licensed liquor retailers in Kenya.
 
 It helps liquor-store owners manage products, stock, purchases, sales, suppliers, deliveries, and business performance from one centralized system.
 
@@ -40,7 +40,7 @@ It helps liquor-store owners manage products, stock, purchases, sales, suppliers
 
 Liquor retailers often rely on manual stock records, spreadsheets, notebooks, and disconnected tools. This makes it difficult to track stock levels, calculate profits, manage suppliers, and understand daily business performance.
 
-StockPilot Liquor is being developed to solve these challenges through a simple, scalable, and mobile-friendly SaaS platform.
+StockSafi Liquor is being developed to solve these challenges through a simple, scalable, and mobile-friendly SaaS platform.
 
 ### Main Objectives
 
@@ -252,7 +252,7 @@ The upcoming payment milestone will include:
 
 ## Architecture
 
-StockPilot follows a layered architecture designed to keep application responsibilities separated.
+StockSafi follows a layered architecture designed to keep application responsibilities separated.
 
 ### Backend Flow
 
@@ -309,7 +309,7 @@ Database
 ## Project Structure
 
 ```text
-stockpilot-liquor/
+stocksafi-liquor/
 ├── README.md
 ├── .gitignore
 ├── LICENSE
@@ -400,7 +400,7 @@ stockpilot-liquor/
         │   ├── Hero.jsx
         │   ├── DashboardPreview.jsx
         │   ├── Features.jsx
-        │   ├── WhyStockPilot.jsx
+        │   ├── WhyStockSafi.jsx
         │   ├── HowItWorks.jsx
         │   ├── Pricing.jsx
         │   ├── FAQ.jsx
@@ -603,7 +603,7 @@ This pattern provides a foundation for progressively refactoring the remaining w
 
 ```bash
 git clone <repository-url>
-cd stockpilot-liquor
+cd stocksafi-liquor
 ```
 
 ### Backend Setup
@@ -856,7 +856,7 @@ The API is protected through authentication and business-level access controls.
 
 ## Business Data Isolation
 
-StockPilot is designed as a multi-business SaaS application.
+StockSafi is designed as a multi-business SaaS application.
 
 Business-owned resources must be accessed within the context of an authenticated user's active business membership.
 
@@ -1032,7 +1032,7 @@ git pull origin main
 
 ## Security Notes
 
-StockPilot handles business and financial data and therefore requires secure handling of authentication and tenant data.
+StockSafi handles business and financial data and therefore requires secure handling of authentication and tenant data.
 
 ### Current Security Measures
 
@@ -1067,7 +1067,7 @@ Before production deployment:
 
 ## Compliance Considerations
 
-StockPilot is intended for the Kenyan market and may eventually integrate with services and systems subject to local regulatory requirements.
+StockSafi is intended for the Kenyan market and may eventually integrate with services and systems subject to local regulatory requirements.
 
 Potential future integrations include:
 
@@ -1077,7 +1077,7 @@ Potential future integrations include:
 
 Compliance requirements should be reviewed and validated before enabling production integrations.
 
-StockPilot does not replace professional legal, tax, accounting, or regulatory advice.
+StockSafi does not replace professional legal, tax, accounting, or regulatory advice.
 
 ---
 

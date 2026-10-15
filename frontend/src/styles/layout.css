@@ -67,7 +67,6 @@ a {
 
 .site-shell {
   min-height: 100vh;
-  overflow: hidden;
   background:
     radial-gradient(
       circle at 80% 0%,

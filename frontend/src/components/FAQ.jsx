@@ -2,22 +2,22 @@ import { ChevronDown } from 'lucide-react'
 
 const questions = [
   {
-    question: 'Who is StockPilot for?',
+    question: 'Who is StockSafi for?',
     answer:
-      'StockPilot is being designed for licensed liquor-store owners, managers, and staff who need clearer business records.',
+      'StockSafi is being designed for licensed liquor-store owners, managers, and staff who need clearer business records.',
   },
   {
-    question: 'Can I use StockPilot on my phone?',
+    question: 'Can I use StockSafi on my phone?',
     answer:
       'The frontend is being designed responsively for desktop, tablet, and mobile use.',
   },
   {
-    question: 'Does StockPilot support M-Pesa?',
+    question: 'Does StockSafi support M-Pesa?',
     answer:
       'M-Pesa is supported as a payment method in the current backend. Direct M-Pesa API integration is planned for a later phase.',
   },
   {
-    question: 'Can I try StockPilot before signing up?',
+    question: 'Can I try StockSafi before signing up?',
     answer:
       'Yes. You can explore the interactive demo without creating an account. Demo data is isolated from real business workspaces.',
   },

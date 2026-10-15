@@ -52,7 +52,7 @@ function Topbar() {
           {businessName}
         </span>
 
-        <h1>StockPilot</h1>
+        <h1>StockSafi</h1>
       </div>
 
       <div className="topbar-actions">

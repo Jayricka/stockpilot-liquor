@@ -9,7 +9,7 @@ function DashboardPreview() {
             <Zap size={13} />
           </span>
 
-          StockPilot
+          StockSafi
         </div>
 
         <div className="dashboard-user">

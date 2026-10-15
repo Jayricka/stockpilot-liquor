@@ -319,7 +319,7 @@ function DemoHeading({
         <h1>{businessName}</h1>
 
         <p>
-          Try the core StockPilot workflow
+          Try the core StockSafi workflow
           using real inventory operations.
         </p>
       </div>
@@ -375,7 +375,7 @@ function DemoError({
 
         <p>
           {message ||
-            'Start a new demo workspace to continue exploring StockPilot.'}
+            'Start a new demo workspace to continue exploring StockSafi.'}
         </p>
 
         <button

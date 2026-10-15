@@ -9,13 +9,13 @@ function Footer() {
         </span>
 
         <span>
-          <strong>StockPilot</strong>
+          <strong>StockSafi</strong>
           <small>Liquor business management</small>
         </span>
       </div>
 
       <p>
-        © 2026 StockPilot. Built for practical business management.
+        © 2026 StockSafi. Built for practical business management.
       </p>
     </footer>
   )

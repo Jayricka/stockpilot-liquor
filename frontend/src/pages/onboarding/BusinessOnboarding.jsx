@@ -76,7 +76,7 @@ function BusinessOnboarding() {
           </span>
 
           <span>
-            <strong>StockPilot</strong>
+            <strong>StockSafi</strong>
             <small>
               Liquor business management
             </small>

@@ -168,7 +168,7 @@ function Pricing() {
           className="pricing-demo-link"
           href="/demo"
         >
-          See how StockPilot works
+          See how StockSafi works
           <ArrowRight size={15} />
         </a>
       </div>

@@ -53,12 +53,12 @@ export function useBusinessOnboarding(
         await onboardBusiness(formData)
 
       sessionStorage.setItem(
-        'stockpilot-business',
+        'stocksafi-business',
         JSON.stringify(response.business),
       )
 
       sessionStorage.setItem(
-        'stockpilot-subscription',
+        'stocksafi-subscription',
         JSON.stringify(
           response.subscription,
         ),

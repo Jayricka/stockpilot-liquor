@@ -11,7 +11,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('stockpilot-access')
+    const accessToken = localStorage.getItem('stocksafi-access')
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`

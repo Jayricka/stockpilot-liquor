@@ -51,7 +51,7 @@ function DemoStart() {
           </span>
 
           <span>
-            StockPilot
+            StockSafi
           </span>
         </div>
 
@@ -62,7 +62,7 @@ function DemoStart() {
           </div>
 
           <h1>
-            See StockPilot in action.
+            See StockSafi in action.
           </h1>
 
           <p>
@@ -128,7 +128,7 @@ function DemoPreview() {
 
       <div className="demo-preview-body">
         <aside>
-          <strong>StockPilot</strong>
+          <strong>StockSafi</strong>
 
           <span className="active">
             Overview

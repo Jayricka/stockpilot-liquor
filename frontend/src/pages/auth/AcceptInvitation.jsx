@@ -89,7 +89,7 @@ function AcceptInvitation() {
           </span>
 
           <span>
-            <strong>StockPilot</strong>
+            <strong>StockSafi</strong>
             <small>Liquor business management</small>
           </span>
         </Link>
@@ -101,7 +101,7 @@ function AcceptInvitation() {
 
           <p>
             Accept your invitation to access an existing
-            business workspace on StockPilot.
+            business workspace on StockSafi.
           </p>
         </div>
 

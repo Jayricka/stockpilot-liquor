@@ -27,7 +27,7 @@ function SubscriptionBanner() {
 
         <div className="subscription-banner-content">
           <strong>
-            {plan?.name || 'StockPilot'} free trial
+            {plan?.name || 'StockSafi'} free trial
           </strong>
 
           <span>
@@ -36,7 +36,7 @@ function SubscriptionBanner() {
               ? 'day'
               : 'days'}{' '}
             remaining. You have full access to
-            StockPilot during your trial.
+            StockSafi during your trial.
           </span>
         </div>
       </div>
@@ -52,11 +52,11 @@ function SubscriptionBanner() {
 
         <div className="subscription-banner-content">
           <strong>
-            {plan?.name || 'StockPilot'} subscription active
+            {plan?.name || 'StockSafi'} subscription active
           </strong>
 
           <span>
-            Your StockPilot subscription is active and
+            Your StockSafi subscription is active and
             your workspace is fully operational.
           </span>
         </div>
