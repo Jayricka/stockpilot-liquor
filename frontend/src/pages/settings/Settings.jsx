@@ -145,7 +145,14 @@ function Settings() {
 
         {workspace.business && (
           <TeamSettings
+            key={workspace.businessId}
+            businessId={workspace.businessId}
+            businessRole={workspace.business.role}
+            currentEmail={workspace.profile.email}
             members={workspace.members}
+            setMembers={workspace.setMembers}
+            setError={setError}
+            setMessage={setMessage}
           />
         )}
       </div>

@@ -8,14 +8,21 @@ import { useState } from 'react'
 import {
   Link,
   useNavigate,
+  useSearchParams,
 } from 'react-router-dom'
 
 import { useAuth } from '../../context/AuthContext.jsx'
 import { loginUser } from '../../services/auth.js'
+import { getSafeNextPath } from '../../utils/navigation.js'
 
 function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { saveSession } = useAuth()
+
+  const nextPath = getSafeNextPath(
+    searchParams.get('next'),
+  )
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +44,7 @@ function Login() {
 
       saveSession(session, session.user)
 
-      navigate('/dashboard', {
+      navigate(nextPath || '/dashboard', {
         replace: true,
       })
     } catch (requestError) {
@@ -56,38 +63,32 @@ function Login() {
     }
   }
 
+  const registerPath = nextPath
+    ? `/register?next=${encodeURIComponent(nextPath)}`
+    : '/'
+
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <Link
-          className="auth-brand"
-          to="/"
-        >
+        <Link className="auth-brand" to="/">
           <span className="brand-mark">
-            <Zap
-              size={18}
-              strokeWidth={2.5}
-            />
+            <Zap size={18} strokeWidth={2.5} />
           </span>
 
           <span>
             <strong>StockPilot</strong>
-            <small>
-              Liquor business management
-            </small>
+            <small>Liquor business management</small>
           </span>
         </Link>
 
         <div className="auth-heading">
           <span>Welcome back</span>
 
-          <h1>
-            Sign in to your business.
-          </h1>
+          <h1>Sign in to your business.</h1>
 
           <p>
-            Access your inventory, sales,
-            purchases, and business insights.
+            Access your inventory, sales, purchases,
+            and business insights.
           </p>
         </div>
 
@@ -115,11 +116,7 @@ function Login() {
           <div className="password-field">
             <input
               id="password"
-              type={
-                showPassword
-                  ? 'text'
-                  : 'password'
-              }
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(event) =>
                 setPassword(event.target.value)
@@ -132,9 +129,7 @@ function Login() {
             <button
               type="button"
               onClick={() =>
-                setShowPassword(
-                  (visible) => !visible,
-                )
+                setShowPassword((visible) => !visible)
               }
               aria-label={
                 showPassword
@@ -151,7 +146,7 @@ function Login() {
           </div>
 
           {error && (
-            <div className="auth-error">
+            <div className="auth-error" role="alert">
               {error}
             </div>
           )}
@@ -161,20 +156,16 @@ function Login() {
             type="submit"
             disabled={loading}
           >
-            {loading
-              ? 'Signing in...'
-              : 'Sign in'}
+            {loading ? 'Signing in...' : 'Sign in'}
 
-            {!loading && (
-              <ArrowRight size={17} />
-            )}
+            {!loading && <ArrowRight size={17} />}
           </button>
         </form>
 
         <p className="auth-footer">
           Need an account?{' '}
-          <Link to="/">
-            Contact StockPilot
+          <Link to={registerPath}>
+            {nextPath ? 'Create an account' : 'Contact StockPilot'}
           </Link>
         </p>
       </section>

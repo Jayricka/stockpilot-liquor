@@ -14,6 +14,8 @@ import { useRegisterForm } from './hooks/useRegisterForm'
 function Register() {
   const [searchParams] = useSearchParams()
   const requestedPlan = searchParams.get('plan')
+  const requestedNext = searchParams.get('next')
+  const isInvitationFlow = Boolean(requestedNext)
 
   const {
     selectedPlan,
@@ -28,56 +30,58 @@ function Register() {
     setConfirmPassword,
     setShowPassword,
     setShowConfirmPassword,
-  } = useRegisterForm(requestedPlan)
+  } = useRegisterForm(
+    requestedPlan,
+    requestedNext,
+  )
 
   const planName =
     selectedPlan.charAt(0).toUpperCase() +
     selectedPlan.slice(1)
 
+  const loginPath = isInvitationFlow
+    ? `/login?next=${encodeURIComponent(requestedNext)}`
+    : '/login'
+
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <Link
-          className="auth-brand"
-          to="/"
-        >
+        <Link className="auth-brand" to="/">
           <span className="brand-mark">
-            <Zap
-              size={18}
-              strokeWidth={2.5}
-            />
+            <Zap size={18} strokeWidth={2.5} />
           </span>
 
           <span>
             <strong>StockPilot</strong>
-            <small>
-              Liquor business management
-            </small>
+            <small>Liquor business management</small>
           </span>
         </Link>
 
         <div className="auth-heading">
-          <span>Get started</span>
+          <span>
+            {isInvitationFlow ? 'Join your team' : 'Get started'}
+          </span>
 
           <h1>
-            Create your StockPilot account.
+            {isInvitationFlow
+              ? 'Create your account.'
+              : 'Create your StockPilot account.'}
           </h1>
 
           <p>
-            Start your 7-day free trial with no
-            payment required.
+            {isInvitationFlow
+              ? 'Register with the email address that received your team invitation.'
+              : 'Start your 7-day free trial with no payment required.'}
           </p>
         </div>
 
-        <div className="auth-plan-summary">
-          <span>Selected plan</span>
-
-          <strong>{planName}</strong>
-
-          <small>
-            7-day free trial
-          </small>
-        </div>
+        {!isInvitationFlow && (
+          <div className="auth-plan-summary">
+            <span>Selected plan</span>
+            <strong>{planName}</strong>
+            <small>7-day free trial</small>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="auth-form-row">
@@ -139,11 +143,7 @@ function Register() {
             <input
               id="password"
               name="password"
-              type={
-                showPassword
-                  ? 'text'
-                  : 'password'
-              }
+              type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleChange}
               placeholder="At least 8 characters"
@@ -154,9 +154,7 @@ function Register() {
             <button
               type="button"
               onClick={() =>
-                setShowPassword(
-                  (visible) => !visible,
-                )
+                setShowPassword((visible) => !visible)
               }
               aria-label={
                 showPassword
@@ -186,9 +184,7 @@ function Register() {
               }
               value={confirmPassword}
               onChange={(event) =>
-                setConfirmPassword(
-                  event.target.value,
-                )
+                setConfirmPassword(event.target.value)
               }
               placeholder="Repeat your password"
               autoComplete="new-password"
@@ -217,7 +213,7 @@ function Register() {
           </div>
 
           {error && (
-            <div className="auth-error">
+            <div className="auth-error" role="alert">
               {error}
             </div>
           )}
@@ -229,19 +225,17 @@ function Register() {
           >
             {loading
               ? 'Creating account...'
-              : 'Continue'}
+              : isInvitationFlow
+                ? 'Continue to invitation'
+                : 'Continue'}
 
-            {!loading && (
-              <ArrowRight size={17} />
-            )}
+            {!loading && <ArrowRight size={17} />}
           </button>
         </form>
 
         <p className="auth-footer">
           Already have an account?{' '}
-          <Link to="/login">
-            Sign in
-          </Link>
+          <Link to={loginPath}>Sign in</Link>
         </p>
       </section>
     </main>

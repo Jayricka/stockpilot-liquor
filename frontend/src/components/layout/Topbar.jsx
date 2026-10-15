@@ -5,6 +5,7 @@ import { useBusiness } from '../../context/BusinessContext.jsx'
 
 function Topbar() {
   const { user } = useAuth()
+
   const {
     business,
     subscription,
@@ -15,12 +16,27 @@ function Topbar() {
 
   const displayName =
     user?.full_name ||
-    user?.first_name ||
+    [user?.first_name, user?.last_name]
+      .filter(Boolean)
+      .join(' ') ||
     user?.email ||
-    'Business owner'
+    'User'
 
   const businessName =
     business?.name || 'Business workspace'
+
+  const roleLabels = {
+    OWNER: 'Owner',
+    MANAGER: 'Manager',
+    STAFF: 'Staff',
+  }
+
+  const businessRole = String(
+    business?.role || '',
+  ).toUpperCase()
+
+  const roleLabel =
+    roleLabels[businessRole] || 'Team member'
 
   const subscriptionLabel =
     isTrialing
@@ -41,9 +57,7 @@ function Topbar() {
 
       <div className="topbar-actions">
         <div className="topbar-subscription">
-          <strong>
-            {subscriptionLabel}
-          </strong>
+          <strong>{subscriptionLabel}</strong>
 
           {isTrialing && (
             <span>
@@ -67,14 +81,12 @@ function Topbar() {
 
         <div className="user-menu">
           <div className="user-avatar">
-            {displayName
-              .charAt(0)
-              .toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </div>
 
           <div>
             <strong>{displayName}</strong>
-            <small>Business owner</small>
+            <small>{roleLabel}</small>
           </div>
         </div>
       </div>
